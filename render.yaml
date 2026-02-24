@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: ouioui
+    runtime: docker
+    plan: free
+    region: frankfurt

@@ -1,0 +1,68 @@
+{% if done %}
+<div class="text-center py-12">
+    <div class="text-4xl mb-4">&#127881;</div>
+    <h2 class="text-xl font-bold mb-2">Termine pour aujourd'hui !</h2>
+    <p class="text-stone-500 mb-4">Toutes les cartes ont ete revisees.</p>
+    <a href="/search" class="text-indigo-600 hover:underline">Ajouter de nouveaux mots</a>
+</div>
+{% elif empty %}
+<div class="text-center py-12">
+    <p class="text-stone-400 text-lg mb-2">Aucune carte a reviser</p>
+    <a href="/search" class="text-indigo-600 hover:underline">Chercher et sauvegarder des mots d'abord</a>
+</div>
+{% else %}
+<div class="bg-white rounded-xl border border-stone-200 p-6">
+    <div class="text-center mb-6">
+        <div class="text-sm text-stone-400 mb-2">Que signifie ce mot ?</div>
+        <div class="text-3xl font-bold text-indigo-600">{{ card.word }}</div>
+    </div>
+
+    <div id="answer-{{ card.id }}" class="hidden">
+        <div class="border-t border-stone-100 pt-4 mb-6">
+            <ul class="space-y-1.5 text-stone-700">
+                {% for d in card.definitions[:3] %}
+                <li>{{ d }}</li>
+                {% endfor %}
+            </ul>
+            {% if card.synonyms %}
+            <div class="mt-3 text-sm text-stone-500">
+                Syn: {{ card.synonyms[:5]|join(', ') }}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="flex gap-2 justify-center">
+            <button hx-post="/api/quiz/rate" hx-vals='{"word_id": {{ card.id }}, "quality": 0}'
+                    hx-target="#card-area" hx-swap="innerHTML"
+                    class="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium">
+                Encore
+            </button>
+            <button hx-post="/api/quiz/rate" hx-vals='{"word_id": {{ card.id }}, "quality": 2}'
+                    hx-target="#card-area" hx-swap="innerHTML"
+                    class="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors text-sm font-medium">
+                Difficile
+            </button>
+            <button hx-post="/api/quiz/rate" hx-vals='{"word_id": {{ card.id }}, "quality": 3}'
+                    hx-target="#card-area" hx-swap="innerHTML"
+                    class="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm font-medium">
+                Bien
+            </button>
+            <button hx-post="/api/quiz/rate" hx-vals='{"word_id": {{ card.id }}, "quality": 5}'
+                    hx-target="#card-area" hx-swap="innerHTML"
+                    class="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors text-sm font-medium">
+                Facile
+            </button>
+        </div>
+    </div>
+
+    <div id="reveal-btn-{{ card.id }}" class="text-center">
+        <button onclick="document.getElementById('answer-{{ card.id }}').classList.remove('hidden'); this.parentElement.classList.add('hidden');"
+                class="px-6 py-2 bg-stone-100 text-stone-600 rounded-lg hover:bg-stone-200 transition-colors">
+            Reveler
+        </button>
+    </div>
+</div>
+<div class="text-center mt-3 text-sm text-stone-400">
+    {{ remaining }} carte{{ 's' if remaining != 1 else '' }} restante{{ 's' if remaining != 1 else '' }}
+</div>
+{% endif %}

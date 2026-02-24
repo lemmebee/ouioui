@@ -1,0 +1,63 @@
+{% if error %}
+<div class="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+    {{ error }}
+</div>
+{% else %}
+<div class="bg-white rounded-xl border border-stone-200 p-6">
+    <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold text-indigo-600">{{ word }}</h2>
+        <div id="save-btn">
+            <button hx-post="/api/save"
+                    hx-vals='{{ save_data }}'
+                    hx-target="#save-btn" hx-swap="innerHTML"
+                    class="px-4 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                Sauvegarder
+            </button>
+        </div>
+    </div>
+
+    {% if translations %}
+    <div class="mb-4">
+        <h3 class="text-sm font-semibold text-stone-400 uppercase tracking-wide mb-2">Traduction anglais &rarr; francais</h3>
+        <ul class="space-y-1.5">
+            {% for t in translations %}
+            <li class="text-stone-700">{{ t }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if definitions %}
+    <div class="mb-4">
+        <h3 class="text-sm font-semibold text-stone-400 uppercase tracking-wide mb-2">Definitions</h3>
+        <ul class="space-y-1.5">
+            {% for d in definitions %}
+            <li class="text-stone-700">{{ d }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if synonyms %}
+    <div class="mb-4">
+        <h3 class="text-sm font-semibold text-stone-400 uppercase tracking-wide mb-2">Synonymes</h3>
+        <div class="flex flex-wrap gap-2">
+            {% for s in synonyms %}
+            <span class="px-2 py-0.5 bg-stone-100 rounded text-sm text-stone-600">{{ s }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if homonyms %}
+    <div>
+        <h3 class="text-sm font-semibold text-stone-400 uppercase tracking-wide mb-2">Homonymes</h3>
+        <div class="flex flex-wrap gap-2">
+            {% for h in homonyms %}
+            <span class="px-2 py-0.5 bg-amber-50 rounded text-sm text-amber-700">{{ h }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}

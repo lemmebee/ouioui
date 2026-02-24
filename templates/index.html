@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Accueil{% endblock %}
+{% block content %}
+<div class="text-center mb-10">
+    <h1 class="text-3xl font-bold mb-2">Bienvenue sur OuiOui</h1>
+    <p class="text-stone-500">Ton compagnon pour apprendre le francais</p>
+</div>
+
+<div class="grid gap-4 sm:grid-cols-3 mb-6">
+    <a href="/search" class="block p-5 bg-white rounded-xl border border-stone-200 hover:border-indigo-300 transition-colors">
+        <div class="text-2xl mb-2">&#128269;</div>
+        <div class="font-semibold">Chercher</div>
+        <div class="text-sm text-stone-500">Definitions, synonymes</div>
+    </a>
+    <a href="/vocab" class="block p-5 bg-white rounded-xl border border-stone-200 hover:border-indigo-300 transition-colors">
+        <div class="text-2xl mb-2">&#128218;</div>
+        <div class="font-semibold">Vocabulaire</div>
+        <div class="text-sm text-stone-500">{{ word_count }} mot{{ 's' if word_count != 1 else '' }}</div>
+    </a>
+    <a href="/quiz" class="block p-5 bg-white rounded-xl border border-stone-200 hover:border-indigo-300 transition-colors">
+        <div class="text-2xl mb-2">&#127891;</div>
+        <div class="font-semibold">Quiz</div>
+        <div class="text-sm text-stone-500">{{ due_count }} carte{{ 's' if due_count != 1 else '' }} a reviser</div>
+    </a>
+</div>
+
+<div class="p-6 bg-white rounded-xl border border-stone-200">
+    <div class="flex items-center gap-2 mb-3">
+        <span class="text-xl">&#11088;</span>
+        <span class="font-semibold">Mot du jour</span>
+    </div>
+    {% if wotd %}
+    <div class="text-xl font-bold text-indigo-600 mb-3">{{ wotd.word }}</div>
+    <ul class="text-sm text-stone-600 space-y-1.5">
+        {% for d in wotd.definitions[:3] %}
+        <li>{{ d }}</li>
+        {% endfor %}
+    </ul>
+    {% if wotd.synonyms %}
+    <div class="mt-3 text-xs text-stone-400">Syn: {{ wotd.synonyms[:5]|join(', ') }}</div>
+    {% endif %}
+    {% else %}
+    <div class="text-sm text-stone-400 italic">Sauvegarde des mots pour voir le mot du jour</div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Chercher{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Chercher un mot</h1>
+
+<form hx-post="/api/lookup" hx-target="#results" hx-indicator="#spinner" class="flex gap-2 mb-6">
+    <input type="text" name="word" placeholder="Mot en francais ou en anglais..."
+           class="flex-1 px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:border-indigo-400"
+           autocomplete="off" autofocus required>
+    <button type="submit"
+            class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+        Chercher
+    </button>
+</form>
+
+<div id="spinner" class="htmx-indicator text-center text-stone-400 py-4">
+    Recherche en cours...
+</div>
+
+<div id="results"></div>
+{% endblock %}

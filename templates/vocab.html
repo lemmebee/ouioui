@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Vocabulaire{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Vocabulaire <span class="text-stone-400 font-normal text-lg">({{ words|length }})</span></h1>
+
+{% if not words %}
+<div class="text-center py-12 text-stone-400">
+    <p class="text-lg mb-2">Aucun mot sauvegarde</p>
+    <a href="/search" class="text-indigo-600 hover:underline">Chercher des mots a ajouter</a>
+</div>
+{% endif %}
+
+<div class="space-y-3" id="vocab-list">
+    {% for w in words %}
+    <div class="word-card bg-white rounded-xl border border-stone-200 p-4">
+        <div class="flex items-start justify-between">
+            <div class="flex-1">
+                <div class="font-bold text-lg text-indigo-600">{{ w.word }}</div>
+                <ul class="mt-1 text-sm text-stone-600 space-y-0.5">
+                    {% for d in w.definitions[:3] %}
+                    <li>{{ d }}</li>
+                    {% endfor %}
+                </ul>
+                {% if w.synonyms %}
+                <div class="mt-2 text-xs text-stone-400">
+                    Syn: {{ w.synonyms[:5]|join(', ') }}
+                </div>
+                {% endif %}
+            </div>
+            <button hx-delete="/api/words/{{ w.id }}" hx-target="closest .word-card" hx-swap="outerHTML swap:300ms"
+                    hx-confirm="Supprimer ce mot ?"
+                    class="text-stone-300 hover:text-red-500 transition-colors ml-4 text-lg">
+                &#10005;
+            </button>
+        </div>
+        {% if w.next_review %}
+        <div class="mt-2 text-xs text-stone-400">
+            Prochaine revision: {{ w.next_review }}
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

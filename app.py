@@ -110,6 +110,9 @@ async def lookup(request: Request, word: str = Form(...)):
         "word_en": result.get("word_en", ""),
         "word_types": json.dumps(result.get("word_types", [])),
         "definitions": json.dumps(result["definitions"]),
+        "definitions_en": json.dumps(result.get("definitions_en", [])),
+        "definitions_ar": json.dumps(result.get("definitions_ar", [])),
+        "translations": json.dumps(result.get("translations", [])),
         "synonyms": json.dumps(result["synonyms"]),
         "homonyms": json.dumps(result["homonyms"]),
     })
@@ -139,6 +142,9 @@ async def save_word(
     word_en: str = Form(""),
     word_types: str = Form("[]"),
     definitions: str = Form(...),
+    definitions_en: str = Form("[]"),
+    definitions_ar: str = Form("[]"),
+    translations: str = Form("[]"),
     synonyms: str = Form("[]"),
     homonyms: str = Form("[]"),
 ):
@@ -146,7 +152,12 @@ async def save_word(
     syns = json.loads(synonyms)
     homs = json.loads(homonyms)
     wtypes = json.loads(word_types)
-    result = db.save_word(word, defs, syns, homs, word_ar=word_ar, word_en=word_en, word_types=wtypes)
+    defs_en = json.loads(definitions_en)
+    defs_ar = json.loads(definitions_ar)
+    trans = json.loads(translations)
+    result = db.save_word(word, defs, syns, homs, word_ar=word_ar, word_en=word_en,
+                          word_types=wtypes, definitions_en=defs_en, definitions_ar=defs_ar,
+                          translations=trans)
     if result:
         return HTMLResponse('<span class="text-green-600 text-sm font-medium">&#10003; Sauvegarde</span>')
     return HTMLResponse('<span class="text-stone-400 text-sm">Deja sauvegarde</span>')

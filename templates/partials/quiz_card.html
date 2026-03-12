@@ -71,11 +71,51 @@
 
     <div id="answer-{{ card.id }}" class="hidden">
         <div class="border-t border-stone-100 pt-4 mb-6">
-            <ul class="space-y-1.5 text-stone-700">
-                {% for d in card.definitions[:3] %}
-                <li>{{ d }}</li>
+            {% if card.word_en or card.word_ar %}
+            <div class="flex items-center gap-1.5 mb-3">
+                {% if card.word_en %}<span class="text-sm font-medium text-stone-500">{{ card.word_en }}</span>{% endif %}
+                {% if card.word_en and card.word_ar %}<span class="text-xs text-stone-300">&#10038;</span>{% endif %}
+                {% if card.word_ar %}<span class="text-sm font-medium text-stone-500" dir="rtl">{{ card.word_ar }}</span>{% endif %}
+            </div>
+            {% endif %}
+            {% if card.word_types %}
+            <div class="flex flex-wrap gap-1 mb-3">
+                {% for wt in card.word_types %}
+                <span class="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-xs font-medium">{{ wt }}</span>
                 {% endfor %}
-            </ul>
+            </div>
+            {% endif %}
+            {% if card.definitions_ar %}
+            <div class="mb-3 pb-3 border-b border-stone-100" dir="rtl">
+                <div class="text-sm font-semibold text-stone-400 uppercase tracking-wide mb-1 text-right">&#127466;&#127468; عربي</div>
+                <ul class="space-y-1 text-sm text-stone-600">
+                    {% for d in card.definitions_ar %}
+                    <li>{{ d }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            {% if card.definitions_en %}
+            <div class="mb-3 pb-3 border-b border-stone-100">
+                <div class="text-sm font-semibold text-stone-400 uppercase tracking-wide mb-1">&#127468;&#127463; English</div>
+                <ul class="space-y-1 text-sm text-stone-600">
+                    {% for d in card.definitions_en %}
+                    <li>{{ d }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            <div class="mb-3">
+                <div class="text-sm font-semibold text-stone-400 uppercase tracking-wide mb-1">&#127467;&#127479; Francais</div>
+                <ul class="space-y-1.5 text-stone-700">
+                    {% for d in card.definitions[:3] %}
+                    <li>{{ d }}</li>
+                    {% endfor %}
+                    {% for t in card.translations %}
+                    <li>{{ t }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
             {% if card.synonyms %}
             <div class="mt-3 text-sm text-stone-500">
                 Syn: {{ card.synonyms[:5]|join(', ') }}

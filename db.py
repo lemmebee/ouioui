@@ -31,6 +31,15 @@ def init_db():
     if cols and "word_types" not in cols:
         conn.execute("ALTER TABLE words ADD COLUMN word_types TEXT DEFAULT '[]'")
         conn.commit()
+    if cols and "definitions_en" not in cols:
+        conn.execute("ALTER TABLE words ADD COLUMN definitions_en TEXT DEFAULT '[]'")
+        conn.commit()
+    if cols and "definitions_ar" not in cols:
+        conn.execute("ALTER TABLE words ADD COLUMN definitions_ar TEXT DEFAULT '[]'")
+        conn.commit()
+    if cols and "translations" not in cols:
+        conn.execute("ALTER TABLE words ADD COLUMN translations TEXT DEFAULT '[]'")
+        conn.commit()
 
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS words (
@@ -40,6 +49,9 @@ def init_db():
             word_en     TEXT DEFAULT '',
             word_types  TEXT DEFAULT '[]',
             definitions TEXT NOT NULL,
+            definitions_en TEXT DEFAULT '[]',
+            definitions_ar TEXT DEFAULT '[]',
+            translations TEXT DEFAULT '[]',
             synonyms    TEXT DEFAULT '[]',
             homonyms    TEXT DEFAULT '[]',
             created_at  TEXT DEFAULT (datetime('now'))
@@ -73,12 +85,17 @@ def init_db():
     conn.close()
 
 
-def save_word(word: str, definitions: list[str], synonyms: list[str], homonyms: list[str], word_ar: str = "", word_en: str = "", word_types: list[str] | None = None) -> int | None:
+def save_word(word: str, definitions: list[str], synonyms: list[str], homonyms: list[str],
+              word_ar: str = "", word_en: str = "", word_types: list[str] | None = None,
+              definitions_en: list[str] | None = None, definitions_ar: list[str] | None = None,
+              translations: list[str] | None = None) -> int | None:
     conn = get_db()
     try:
         cur = conn.execute(
-            "INSERT INTO words (word, word_ar, word_en, word_types, definitions, synonyms, homonyms) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (word, word_ar, word_en, json.dumps(word_types or []), json.dumps(definitions), json.dumps(synonyms), json.dumps(homonyms)),
+            "INSERT INTO words (word, word_ar, word_en, word_types, definitions, definitions_en, definitions_ar, translations, synonyms, homonyms) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (word, word_ar, word_en, json.dumps(word_types or []), json.dumps(definitions),
+             json.dumps(definitions_en or []), json.dumps(definitions_ar or []), json.dumps(translations or []),
+             json.dumps(synonyms), json.dumps(homonyms)),
         )
         word_id = cur.lastrowid
         conn.execute("INSERT INTO reviews (word_id) VALUES (?)", (word_id,))
@@ -105,6 +122,9 @@ def get_all_words() -> list[dict]:
             "word_en": r["word_en"] or "",
             "word_types": json.loads(r["word_types"] or "[]"),
             "definitions": json.loads(r["definitions"]),
+            "definitions_en": json.loads(r["definitions_en"] or "[]"),
+            "definitions_ar": json.loads(r["definitions_ar"] or "[]"),
+            "translations": json.loads(r["translations"] or "[]"),
             "synonyms": json.loads(r["synonyms"]),
             "homonyms": json.loads(r["homonyms"]),
             "created_at": r["created_at"],
@@ -114,20 +134,20 @@ def get_all_words() -> list[dict]:
 
 
 def backfill_word_fields():
-    """Backfill word_en and word_types for words missing them."""
+    """Backfill word_en, word_types, definitions_en, definitions_ar, translations for words missing them."""
     import dictionary
     conn = get_db()
     rows = conn.execute(
-        "SELECT id, word FROM words WHERE (word_en = '' OR word_en IS NULL) OR (word_types = '[]' OR word_types IS NULL)"
+        "SELECT id, word FROM words WHERE (word_en = '' OR word_en IS NULL) OR (definitions_en = '[]' OR definitions_en IS NULL)"
     ).fetchall()
     for r in rows:
         try:
             result = dictionary.full_lookup(r["word"])
-            word_en = result.get("word_en", "")
-            word_types = json.dumps(result.get("word_types", []))
             conn.execute(
-                "UPDATE words SET word_en = ?, word_types = ? WHERE id = ?",
-                (word_en, word_types, r["id"]),
+                "UPDATE words SET word_en=?, word_types=?, definitions_en=?, definitions_ar=?, translations=? WHERE id=?",
+                (result.get("word_en", ""), json.dumps(result.get("word_types", [])),
+                 json.dumps(result.get("definitions_en", [])), json.dumps(result.get("definitions_ar", [])),
+                 json.dumps(result.get("translations", [])), r["id"]),
             )
             conn.commit()
         except Exception:
@@ -167,7 +187,9 @@ def delete_word(word_id: int):
 def get_due_card() -> dict | None:
     conn = get_db()
     r = conn.execute("""
-        SELECT w.id, w.word, w.definitions, w.synonyms, w.homonyms,
+        SELECT w.id, w.word, w.word_en, w.word_ar, w.word_types,
+               w.definitions, w.definitions_en, w.definitions_ar, w.translations,
+               w.synonyms, w.homonyms,
                r.repetitions, r.easiness, r.interval, r.next_review
         FROM words w JOIN reviews r ON w.id = r.word_id
         WHERE r.next_review <= date('now')
@@ -179,7 +201,13 @@ def get_due_card() -> dict | None:
     return {
         "id": r["id"],
         "word": r["word"],
+        "word_en": r["word_en"] or "",
+        "word_ar": r["word_ar"] or "",
+        "word_types": json.loads(r["word_types"] or "[]"),
         "definitions": json.loads(r["definitions"]),
+        "definitions_en": json.loads(r["definitions_en"] or "[]"),
+        "definitions_ar": json.loads(r["definitions_ar"] or "[]"),
+        "translations": json.loads(r["translations"] or "[]"),
         "synonyms": json.loads(r["synonyms"]),
         "homonyms": json.loads(r["homonyms"]),
         "repetitions": r["repetitions"],

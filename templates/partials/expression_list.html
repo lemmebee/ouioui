@@ -1,0 +1,32 @@
+{% for e in expressions %}
+<div class="expr-card bg-white rounded-xl border border-stone-200 p-4">
+    <div class="flex items-start justify-between">
+        <div class="flex-1">
+            <div class="flex items-center gap-1.5">
+                <span class="font-bold text-lg text-indigo-600">{{ e.french }}</span>
+                <button onclick="speak(this.dataset.text)" data-text="{{ e.french }}" class="text-stone-400 hover:text-indigo-600 transition-colors text-sm" title="Ecouter">&#128264;</button>
+            </div>
+            <p class="mt-1 text-sm text-stone-600">{{ e.english }}</p>
+            {% if e.note %}
+            <p class="mt-1 text-xs text-stone-400 italic">{{ e.note }}</p>
+            {% endif %}
+        </div>
+        <button hx-delete="/api/expressions/{{ e.id }}" hx-target="closest .expr-card" hx-swap="outerHTML swap:300ms"
+                hx-confirm="Supprimer cette expression ?"
+                class="text-stone-300 hover:text-red-500 transition-colors ml-4 text-lg">
+            &#10005;
+        </button>
+    </div>
+    {% if e.next_review %}
+    <div class="mt-2 text-xs text-stone-400">
+        Prochaine revision: {{ e.next_review }}
+    </div>
+    {% endif %}
+</div>
+{% endfor %}
+{% if not expressions %}
+<div class="text-center py-12 text-stone-400">
+    <p class="text-lg mb-2">Aucune expression sauvegardee</p>
+    <p class="text-sm">Ajoute des expressions avec le formulaire ci-dessus</p>
+</div>
+{% endif %}

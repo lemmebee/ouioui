@@ -3,3 +3,6 @@ uvicorn[standard]
 jinja2
 python-multipart
 larousse-api-sunbro
+python-dotenv
+deepl
+lxml

@@ -10,11 +10,63 @@
     <p class="text-stone-400 text-lg mb-2">Aucune carte a reviser</p>
     <a href="/search" class="text-indigo-600 hover:underline">Chercher et sauvegarder des mots d'abord</a>
 </div>
+{% elif card.type == 'expression' %}
+<div class="bg-white rounded-xl border border-stone-200 p-6">
+    <div class="text-center mb-6">
+        <div class="text-sm text-stone-400 mb-2">Que signifie cette expression ?</div>
+        <div class="text-3xl font-bold text-indigo-600">
+            {{ card.french }}
+            <button onclick="speak(this.dataset.text)" data-text="{{ card.french }}" class="text-stone-400 hover:text-indigo-600 transition-colors align-middle text-xl" title="Ecouter">&#128264;</button>
+        </div>
+    </div>
+
+    <div id="answer-expr-{{ card.id }}" class="hidden">
+        <div class="border-t border-stone-100 pt-4 mb-6">
+            <p class="text-stone-700">{{ card.english }}</p>
+            {% if card.note %}
+            <p class="mt-2 text-sm text-stone-500 italic">{{ card.note }}</p>
+            {% endif %}
+        </div>
+
+        <div class="flex gap-2 justify-center">
+            <button hx-post="/api/quiz/rate" hx-vals='{"expr_id": {{ card.id }}, "quality": 0}'
+                    hx-target="#card-area" hx-swap="innerHTML"
+                    class="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium">
+                Encore
+            </button>
+            <button hx-post="/api/quiz/rate" hx-vals='{"expr_id": {{ card.id }}, "quality": 2}'
+                    hx-target="#card-area" hx-swap="innerHTML"
+                    class="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors text-sm font-medium">
+                Difficile
+            </button>
+            <button hx-post="/api/quiz/rate" hx-vals='{"expr_id": {{ card.id }}, "quality": 3}'
+                    hx-target="#card-area" hx-swap="innerHTML"
+                    class="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm font-medium">
+                Bien
+            </button>
+            <button hx-post="/api/quiz/rate" hx-vals='{"expr_id": {{ card.id }}, "quality": 5}'
+                    hx-target="#card-area" hx-swap="innerHTML"
+                    class="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors text-sm font-medium">
+                Facile
+            </button>
+        </div>
+    </div>
+
+    <div id="reveal-btn-expr-{{ card.id }}" class="text-center">
+        <button onclick="document.getElementById('answer-expr-{{ card.id }}').classList.remove('hidden'); this.parentElement.classList.add('hidden');"
+                class="px-6 py-2 bg-stone-100 text-stone-600 rounded-lg hover:bg-stone-200 transition-colors">
+            Reveler
+        </button>
+    </div>
+</div>
 {% else %}
 <div class="bg-white rounded-xl border border-stone-200 p-6">
     <div class="text-center mb-6">
         <div class="text-sm text-stone-400 mb-2">Que signifie ce mot ?</div>
-        <div class="text-3xl font-bold text-indigo-600">{{ card.word }}</div>
+        <div class="text-3xl font-bold text-indigo-600">
+            {{ card.word }}
+            <button onclick="speak('{{ card.word }}')" class="text-stone-400 hover:text-indigo-600 transition-colors align-middle text-xl" title="Ecouter">&#128264;</button>
+        </div>
     </div>
 
     <div id="answer-{{ card.id }}" class="hidden">

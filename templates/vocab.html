@@ -15,7 +15,20 @@
     <div class="word-card bg-white rounded-xl border border-stone-200 p-4">
         <div class="flex items-start justify-between">
             <div class="flex-1">
-                <div class="font-bold text-lg text-indigo-600">{{ w.word }}</div>
+                <div class="flex items-center gap-1.5">
+                    <span class="font-bold text-lg text-indigo-600">{{ w.word }}</span>
+                    {% if w.word_en %}<span class="text-sm text-stone-400">{{ w.word_en }}</span>{% endif %}
+                    {% if w.word_en and w.word_ar %}<span class="text-xs text-stone-300">&#10038;</span>{% endif %}
+                    {% if w.word_ar %}<span class="text-sm text-stone-400" dir="rtl">{{ w.word_ar }}</span>{% endif %}
+                    <button onclick="speak('{{ w.word }}')" class="text-stone-400 hover:text-indigo-600 transition-colors text-sm" title="Ecouter">&#128264;</button>
+                </div>
+                {% if w.word_types %}
+                <div class="flex flex-wrap gap-1 mt-1">
+                    {% for wt in w.word_types %}
+                    <span class="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-xs font-medium">{{ wt }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
                 <ul class="mt-1 text-sm text-stone-600 space-y-0.5">
                     {% for d in w.definitions[:3] %}
                     <li>{{ d }}</li>

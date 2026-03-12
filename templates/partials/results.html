@@ -4,33 +4,67 @@
 </div>
 {% else %}
 <div class="bg-white rounded-xl border border-stone-200 p-6">
-    <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-bold text-indigo-600">{{ word }}</h2>
+    <div class="flex items-center justify-between mb-1">
+        <div class="flex items-center gap-2">
+            <h2 class="text-xl font-bold text-indigo-600">{{ word }}</h2>
+            {% if word_en %}<span class="text-sm text-stone-400">{{ word_en }}</span>{% endif %}
+            {% if word_en and word_ar %}<span class="text-xs text-stone-300">&#10038;</span>{% endif %}
+            {% if word_ar %}<span class="text-sm text-stone-400" dir="rtl">{{ word_ar }}</span>{% endif %}
+            <button onclick="speak('{{ word }}')" class="text-stone-400 hover:text-indigo-600 transition-colors" title="Ecouter">&#128264;</button>
+        </div>
         <div id="save-btn">
+            {% if already_saved %}
+            <span class="text-stone-400 text-sm">Deja sauvegarde</span>
+            {% else %}
             <button hx-post="/api/save"
                     hx-vals='{{ save_data }}'
                     hx-target="#save-btn" hx-swap="innerHTML"
                     class="px-4 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
                 Sauvegarder
             </button>
+            {% endif %}
         </div>
     </div>
 
-    {% if translations %}
-    <div class="mb-4">
-        <h3 class="text-sm font-semibold text-stone-400 uppercase tracking-wide mb-2">Traduction anglais &rarr; francais</h3>
-        <ul class="space-y-1.5">
-            {% for t in translations %}
-            <li class="text-stone-700">{{ t }}</li>
+    {% if word_types %}
+    <div class="flex flex-wrap gap-1.5 mb-4">
+        {% for wt in word_types %}
+        <span class="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-xs font-medium">{{ wt }}</span>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="mb-4"></div>
+    {% endif %}
+
+    {% if definitions_ar %}
+    <div class="mb-3 pb-3 border-b border-stone-100" dir="rtl">
+        <div class="text-sm font-semibold text-stone-400 uppercase tracking-wide mb-1 text-right">&#127466;&#127468; عربي</div>
+        <ul class="space-y-1">
+            {% for d in definitions_ar %}
+            <li class="text-stone-600 text-sm">{{ d }}</li>
             {% endfor %}
         </ul>
     </div>
     {% endif %}
 
-    {% if definitions %}
+    {% if definitions_en %}
+    <div class="mb-3 pb-3 border-b border-stone-100">
+        <div class="text-sm font-semibold text-stone-400 uppercase tracking-wide mb-1">&#127468;&#127463; English</div>
+        <ul class="space-y-1">
+            {% for d in definitions_en %}
+            <li class="text-stone-600 text-sm">{{ d }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if translations or definitions %}
     <div class="mb-4">
-        <h3 class="text-sm font-semibold text-stone-400 uppercase tracking-wide mb-2">Definitions</h3>
+        <h3 class="text-sm font-semibold text-stone-400 uppercase tracking-wide mb-2">&#127467;&#127479; Francais</h3>
         <ul class="space-y-1.5">
+            {% for t in translations %}
+            <li class="text-stone-700">{{ t }}</li>
+            {% endfor %}
             {% for d in definitions %}
             <li class="text-stone-700">{{ d }}</li>
             {% endfor %}

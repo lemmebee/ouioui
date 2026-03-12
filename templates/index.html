@@ -6,7 +6,7 @@
     <p class="text-stone-500">Ton compagnon pour apprendre le francais</p>
 </div>
 
-<div class="grid gap-4 sm:grid-cols-3 mb-6">
+<div class="grid gap-4 sm:grid-cols-4 mb-6">
     <a href="/search" class="block p-5 bg-white rounded-xl border border-stone-200 hover:border-indigo-300 transition-colors">
         <div class="text-2xl mb-2">&#128269;</div>
         <div class="font-semibold">Chercher</div>
@@ -16,6 +16,11 @@
         <div class="text-2xl mb-2">&#128218;</div>
         <div class="font-semibold">Vocabulaire</div>
         <div class="text-sm text-stone-500">{{ word_count }} mot{{ 's' if word_count != 1 else '' }}</div>
+    </a>
+    <a href="/expressions" class="block p-5 bg-white rounded-xl border border-stone-200 hover:border-indigo-300 transition-colors">
+        <div class="text-2xl mb-2">&#128172;</div>
+        <div class="font-semibold">Expressions</div>
+        <div class="text-sm text-stone-500">{{ expression_count }} expression{{ 's' if expression_count != 1 else '' }}</div>
     </a>
     <a href="/quiz" class="block p-5 bg-white rounded-xl border border-stone-200 hover:border-indigo-300 transition-colors">
         <div class="text-2xl mb-2">&#127891;</div>
@@ -30,7 +35,10 @@
         <span class="font-semibold">Mot du jour</span>
     </div>
     {% if wotd %}
-    <div class="text-xl font-bold text-indigo-600 mb-3">{{ wotd.word }}</div>
+    <div class="flex items-center gap-2 mb-3">
+        <span class="text-xl font-bold text-indigo-600">{{ wotd.word }}</span>
+        <button onclick="speak('{{ wotd.word }}')" class="text-stone-400 hover:text-indigo-600 transition-colors" title="Ecouter">&#128264;</button>
+    </div>
     <ul class="text-sm text-stone-600 space-y-1.5">
         {% for d in wotd.definitions[:3] %}
         <li>{{ d }}</li>

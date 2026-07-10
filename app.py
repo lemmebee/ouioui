@@ -47,7 +47,7 @@ async def home(request: Request):
         _wotd_cache.clear()
         _wotd_cache[today] = w
 
-    return templates.TemplateResponse("index.html", {
+    return templates.TemplateResponse(request, "index.html", {
         "request": request,
         "wotd": _wotd_cache.get(today),
         "word_count": db.word_count(),
@@ -58,12 +58,12 @@ async def home(request: Request):
 
 @app.get("/search", response_class=HTMLResponse)
 async def search_page(request: Request):
-    return templates.TemplateResponse("search.html", {"request": request})
+    return templates.TemplateResponse(request, "search.html", {"request": request})
 
 
 @app.get("/vocab", response_class=HTMLResponse)
 async def vocab_page(request: Request):
-    return templates.TemplateResponse("vocab.html", {
+    return templates.TemplateResponse(request, "vocab.html", {
         "request": request,
         "words": db.get_all_words(),
     })
@@ -71,7 +71,7 @@ async def vocab_page(request: Request):
 
 @app.get("/expressions", response_class=HTMLResponse)
 async def expressions_page(request: Request):
-    return templates.TemplateResponse("expressions.html", {
+    return templates.TemplateResponse(request, "expressions.html", {
         "request": request,
         "expressions": db.get_all_expressions(),
     })
@@ -79,7 +79,7 @@ async def expressions_page(request: Request):
 
 @app.get("/quiz", response_class=HTMLResponse)
 async def quiz_page(request: Request):
-    return templates.TemplateResponse("quiz.html", {"request": request})
+    return templates.TemplateResponse(request, "quiz.html", {"request": request})
 
 
 # --- HTMX API ---
@@ -88,19 +88,19 @@ async def quiz_page(request: Request):
 async def lookup(request: Request, word: str = Form(...)):
     word = word.strip()
     if not word:
-        return templates.TemplateResponse("partials/results.html", {
+        return templates.TemplateResponse(request, "partials/results.html", {
             "request": request, "error": "Entrer un mot",
         })
 
     try:
         result = dictionary.full_lookup(word)
     except Exception:
-        return templates.TemplateResponse("partials/results.html", {
+        return templates.TemplateResponse(request, "partials/results.html", {
             "request": request, "error": f"Impossible de trouver \"{word}\"",
         })
 
     if not result["definitions"] and not result["translations"]:
-        return templates.TemplateResponse("partials/results.html", {
+        return templates.TemplateResponse(request, "partials/results.html", {
             "request": request, "error": f"Aucune definition trouvee pour \"{word}\"",
         })
 
@@ -117,7 +117,7 @@ async def lookup(request: Request, word: str = Form(...)):
         "homonyms": json.dumps(result["homonyms"]),
     })
 
-    return templates.TemplateResponse("partials/results.html", {
+    return templates.TemplateResponse(request, "partials/results.html", {
         "request": request,
         "word": result["word"],
         "word_ar": result.get("word_ar", ""),
@@ -176,7 +176,7 @@ async def add_expression(request: Request, french: str = Form(...), english: str
         return HTMLResponse('<span class="text-red-500 text-sm">Francais et anglais requis</span>')
     result = db.save_expression(french, english, note)
     if result:
-        return templates.TemplateResponse("partials/expression_list.html", {
+        return templates.TemplateResponse(request, "partials/expression_list.html", {
             "request": request,
             "expressions": db.get_all_expressions(),
         })
@@ -210,13 +210,13 @@ def _has_any_items() -> bool:
 async def quiz_next(request: Request):
     card = _next_due_card()
     if card is None:
-        return templates.TemplateResponse("partials/quiz_card.html", {
+        return templates.TemplateResponse(request, "partials/quiz_card.html", {
             "request": request,
             "done": _has_any_items(),
             "empty": not _has_any_items(),
         })
     remaining = _total_due()
-    return templates.TemplateResponse("partials/quiz_card.html", {
+    return templates.TemplateResponse(request, "partials/quiz_card.html", {
         "request": request,
         "card": card,
         "remaining": remaining,
@@ -241,13 +241,13 @@ async def quiz_rate(request: Request, word_id: int = Form(None), expr_id: int = 
     # Return next card
     next_card = _next_due_card()
     if next_card is None:
-        return templates.TemplateResponse("partials/quiz_card.html", {
+        return templates.TemplateResponse(request, "partials/quiz_card.html", {
             "request": request,
             "done": _has_any_items(),
             "empty": not _has_any_items(),
         })
     remaining = _total_due()
-    return templates.TemplateResponse("partials/quiz_card.html", {
+    return templates.TemplateResponse(request, "partials/quiz_card.html", {
         "request": request,
         "card": next_card,
         "remaining": remaining,

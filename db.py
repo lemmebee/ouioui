@@ -1,9 +1,10 @@
 import json
+import os
 import sqlite3
 from datetime import date, datetime
 from pathlib import Path
 
-DB_PATH = Path(__file__).parent / "ouioui.db"
+DB_PATH = Path(os.environ.get("DB_PATH", Path(__file__).parent / "ouioui.db"))
 
 CURATED_WORDS = [
     "bonjour", "merci", "maison", "chat", "livre", "soleil", "fleur",

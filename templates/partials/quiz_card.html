@@ -1,3 +1,4 @@
+{% import "partials/_macros.html" as m %}
 {% if done %}
 <div class="text-center py-12">
     <div class="text-4xl mb-4">&#127881;</div>
@@ -65,14 +66,15 @@
         <div class="text-sm text-stone-400 mb-2">Que signifie ce mot ?</div>
         <div class="text-3xl font-bold text-indigo-600">
             {{ card.word }}
-            <button onclick="speak('{{ card.word }}')" class="text-stone-400 hover:text-indigo-600 transition-colors align-middle text-xl" title="Ecouter">&#128264;</button>
+            <button onclick="speak(this.dataset.text)" data-text="{{ card.word }}" class="text-stone-400 hover:text-indigo-600 transition-colors align-middle text-xl" title="Ecouter">&#128264;</button>
         </div>
     </div>
 
     <div id="answer-{{ card.id }}" class="hidden">
         <div class="border-t border-stone-100 pt-4 mb-6">
-            {% if card.word_en or card.word_ar %}
+            {% if card.word_en or card.word_ar or card.ipa %}
             <div class="flex items-center gap-1.5 mb-3">
+                {% if card.ipa %}<span class="text-sm text-stone-400 font-mono">\{{ card.ipa[0] }}\</span>{% endif %}
                 {% if card.word_en %}<span class="text-sm font-medium text-stone-500">{{ card.word_en }}</span>{% endif %}
                 {% if card.word_en and card.word_ar %}<span class="text-xs text-stone-300">&#10038;</span>{% endif %}
                 {% if card.word_ar %}<span class="text-sm font-medium text-stone-500" dir="rtl">{{ card.word_ar }}</span>{% endif %}
@@ -85,40 +87,26 @@
                 {% endfor %}
             </div>
             {% endif %}
-            {% if card.definitions_ar %}
-            <div class="mb-3 pb-3 border-b border-stone-100" dir="rtl">
-                <div class="text-sm font-semibold text-stone-400 uppercase tracking-wide mb-1 text-right">&#127466;&#127468; عربي</div>
-                <ul class="space-y-1 text-sm text-stone-600">
-                    {% for d in card.definitions_ar %}
-                    <li>{{ d }}</li>
-                    {% endfor %}
-                </ul>
-            </div>
+            {% if card.senses %}
+            <ul class="space-y-1 mb-3">
+                {% for s in card.senses %}
+                {{ m.sense(s, card.word, loop.index0, translatable=False) }}
+                {% endfor %}
+            </ul>
+            {% else %}
+            {# Saved before the Wiktionary migration; backfill fills these in. #}
+            <ul class="space-y-1.5 text-stone-700 mb-3">
+                {% for d in card.definitions %}
+                <li>{{ d }}</li>
+                {% endfor %}
+            </ul>
             {% endif %}
-            {% if card.definitions_en %}
-            <div class="mb-3 pb-3 border-b border-stone-100">
-                <div class="text-sm font-semibold text-stone-400 uppercase tracking-wide mb-1">&#127468;&#127463; English</div>
-                <ul class="space-y-1 text-sm text-stone-600">
-                    {% for d in card.definitions_en %}
-                    <li>{{ d }}</li>
-                    {% endfor %}
-                </ul>
-            </div>
+            {% if card.etymology %}
+            <p class="text-sm text-stone-400 italic mb-2">{{ card.etymology }}</p>
             {% endif %}
-            <div class="mb-3">
-                <div class="text-sm font-semibold text-stone-400 uppercase tracking-wide mb-1">&#127467;&#127479; Francais</div>
-                <ul class="space-y-1.5 text-stone-700">
-                    {% for d in card.definitions[:3] %}
-                    <li>{{ d }}</li>
-                    {% endfor %}
-                    {% for t in card.translations %}
-                    <li>{{ t }}</li>
-                    {% endfor %}
-                </ul>
-            </div>
             {% if card.synonyms %}
             <div class="mt-3 text-sm text-stone-500">
-                Syn: {{ card.synonyms[:5]|join(', ') }}
+                Syn: {{ card.synonyms[:8]|join(', ') }}
             </div>
             {% endif %}
         </div>

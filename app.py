@@ -1,4 +1,3 @@
-import json
 import random
 import threading
 from datetime import date, timedelta
@@ -18,6 +17,8 @@ from sm2 import sm2
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+# Without a DeepL key there is nothing behind the Traduire buttons, so hide them.
+templates.env.globals["deepl_enabled"] = dictionary.deepl_available()
 
 # Word of the day cache: {date_str: word_dict}
 _wotd_cache: dict[str, dict | None] = {}
@@ -40,8 +41,8 @@ async def home(request: Request):
             # Fallback: pick a curated word and look it up
             curated = random.choice(db.CURATED_WORDS)
             try:
-                result = dictionary.lookup(curated)
-                w = result if result["definitions"] else None
+                result = db.cached_lookup(curated)
+                w = result if result["senses"] else None
             except Exception:
                 w = None
         _wotd_cache.clear()
@@ -85,7 +86,7 @@ async def quiz_page(request: Request):
 # --- HTMX API ---
 
 @app.post("/api/lookup", response_class=HTMLResponse)
-async def lookup(request: Request, word: str = Form(...)):
+async def lookup(request: Request, word: str = Form("")):
     word = word.strip()
     if not word:
         return templates.TemplateResponse(request, "partials/results.html", {
@@ -93,74 +94,64 @@ async def lookup(request: Request, word: str = Form(...)):
         })
 
     try:
-        result = dictionary.full_lookup(word)
+        result = db.cached_lookup(word)
     except Exception:
         return templates.TemplateResponse(request, "partials/results.html", {
             "request": request, "error": f"Impossible de trouver \"{word}\"",
         })
 
-    if not result["definitions"] and not result["translations"]:
+    if not result["senses"]:
         return templates.TemplateResponse(request, "partials/results.html", {
             "request": request, "error": f"Aucune definition trouvee pour \"{word}\"",
         })
 
-    save_data = json.dumps({
-        "word": result["word"],
-        "word_ar": result.get("word_ar", ""),
-        "word_en": result.get("word_en", ""),
-        "word_types": json.dumps(result.get("word_types", [])),
-        "definitions": json.dumps(result["definitions"]),
-        "definitions_en": json.dumps(result.get("definitions_en", [])),
-        "definitions_ar": json.dumps(result.get("definitions_ar", [])),
-        "translations": json.dumps(result.get("translations", [])),
-        "synonyms": json.dumps(result["synonyms"]),
-        "homonyms": json.dumps(result["homonyms"]),
-    })
-
     return templates.TemplateResponse(request, "partials/results.html", {
         "request": request,
-        "word": result["word"],
-        "word_ar": result.get("word_ar", ""),
-        "word_en": result.get("word_en", ""),
-        "definitions": result["definitions"],
-        "definitions_en": result["definitions_en"],
-        "definitions_ar": result["definitions_ar"],
-        "translations": result["translations"],
-        "word_types": result["word_types"],
-        "synonyms": result["synonyms"],
-        "homonyms": result["homonyms"],
-        "source": result["source"],
-        "save_data": save_data,
+        "r": result,
         "already_saved": db.word_exists(result["word"]),
     })
 
 
 @app.post("/api/save", response_class=HTMLResponse)
-async def save_word(
-    word: str = Form(...),
-    word_ar: str = Form(""),
-    word_en: str = Form(""),
-    word_types: str = Form("[]"),
-    definitions: str = Form(...),
-    definitions_en: str = Form("[]"),
-    definitions_ar: str = Form("[]"),
-    translations: str = Form("[]"),
-    synonyms: str = Form("[]"),
-    homonyms: str = Form("[]"),
-):
-    defs = json.loads(definitions)
-    syns = json.loads(synonyms)
-    homs = json.loads(homonyms)
-    wtypes = json.loads(word_types)
-    defs_en = json.loads(definitions_en)
-    defs_ar = json.loads(definitions_ar)
-    trans = json.loads(translations)
-    result = db.save_word(word, defs, syns, homs, word_ar=word_ar, word_en=word_en,
-                          word_types=wtypes, definitions_en=defs_en, definitions_ar=defs_ar,
-                          translations=trans)
-    if result:
+async def save_word(word: str = Form(...)):
+    """The full record already sits in the lookup cache, so only the word travels."""
+    try:
+        record = db.cached_lookup(word)
+    except Exception:
+        return HTMLResponse('<span class="text-red-500 text-sm">Echec de la sauvegarde</span>')
+    if not record.get("senses"):
+        return HTMLResponse('<span class="text-red-500 text-sm">Rien a sauvegarder</span>')
+    if db.save_word(record):
         return HTMLResponse('<span class="text-green-600 text-sm font-medium">&#10003; Sauvegarde</span>')
     return HTMLResponse('<span class="text-stone-400 text-sm">Deja sauvegarde</span>')
+
+
+@app.post("/api/translate-example", response_class=HTMLResponse)
+async def translate_example(
+    request: Request,
+    word: str = Form(...),
+    sense_index: int = Form(...),
+    example_index: int = Form(...),
+):
+    """Translate one extra example on demand, then store it so it stays translated."""
+    try:
+        record = db.cached_lookup(word)
+        example = dictionary.translate_example(record, sense_index, example_index)
+    except Exception:
+        return HTMLResponse('<span class="text-red-500 text-xs">Traduction indisponible</span>')
+
+    if not example["en"] and not example["ar"]:
+        # DeepL unavailable or refused; say so rather than swapping in an empty box.
+        return HTMLResponse('<span class="text-stone-400 text-xs">Traduction indisponible</span>')
+
+    db.cache_put(word, record)
+    if record["word"].lower() != word.lower():
+        db.cache_put(record["word"], record)
+    db.update_word_senses(record["word"], record["senses"])
+
+    return templates.TemplateResponse(request, "partials/example_translation.html", {
+        "request": request, "example": example,
+    })
 
 
 @app.delete("/api/words/{word_id}", response_class=HTMLResponse)

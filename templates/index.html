@@ -37,7 +37,12 @@
     </div>
     {% if wotd %}
     <div class="flex items-center gap-2 mb-3">
+        {# The curated fallback word is not saved, so it has no page to link to. #}
+        {% if wotd.id %}
+        <a href="/word/{{ wotd.id }}" class="text-xl font-bold text-indigo-600 hover:underline">{{ wotd.word }}</a>
+        {% else %}
         <span class="text-xl font-bold text-indigo-600">{{ wotd.word }}</span>
+        {% endif %}
         {% if wotd.ipa %}<span class="text-xs text-stone-400 font-mono">\{{ wotd.ipa[0] }}\</span>{% endif %}
         {{ m.speaker(wotd.word) }}
     </div>

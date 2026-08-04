@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "partials/_macros.html" as m %}
 {% block title %}Accueil{% endblock %}
 {% block content %}
 <div class="text-center mb-10">
@@ -38,7 +39,7 @@
     <div class="flex items-center gap-2 mb-3">
         <span class="text-xl font-bold text-indigo-600">{{ wotd.word }}</span>
         {% if wotd.ipa %}<span class="text-xs text-stone-400 font-mono">\{{ wotd.ipa[0] }}\</span>{% endif %}
-        <button onclick="speak(this.dataset.text)" data-text="{{ wotd.word }}" class="text-stone-400 hover:text-indigo-600 transition-colors" title="Ecouter">&#128264;</button>
+        {{ m.speaker(wotd.word) }}
     </div>
     <ul class="text-sm text-stone-600 space-y-1.5">
         {% for d in wotd.definitions[:3] %}

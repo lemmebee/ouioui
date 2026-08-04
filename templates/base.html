@@ -8,12 +8,34 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <script>
-        function speak(word) {
+        // Playback speed persists across pages so it survives HTMX swaps.
+        const SPEECH_RATE_KEY = 'ouioui.speechRate';
+
+        function speechRate() {
+            return parseFloat(localStorage.getItem(SPEECH_RATE_KEY)) || 0.9;
+        }
+
+        function setSpeechRate(rate) {
+            localStorage.setItem(SPEECH_RATE_KEY, rate);
+        }
+
+        // rate omitted -> the saved preference; passed explicitly -> one-off playback.
+        function speak(word, rate) {
+            speechSynthesis.cancel();
             const u = new SpeechSynthesisUtterance(word);
             u.lang = 'fr-FR';
-            u.rate = 0.9;
+            u.rate = rate || speechRate();
             speechSynthesis.speak(u);
         }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const select = document.getElementById('speech-rate');
+            if (!select) return;
+            select.value = speechRate();
+            select.addEventListener('change', function () {
+                setSpeechRate(this.value);
+            });
+        });
     </script>
     <style>
         .htmx-indicator { display: none; }
@@ -32,6 +54,17 @@
                 <a href="/expressions" class="hover:text-indigo-600 transition-colors">Expressions</a>
                 <a href="/quiz" class="hover:text-indigo-600 transition-colors">Quiz</a>
             </div>
+            <label class="ml-auto flex items-center gap-1.5 text-xs text-stone-400" title="Vitesse de la voix">
+                &#128264;
+                <select id="speech-rate"
+                        class="bg-transparent border border-stone-200 rounded px-1 py-0.5 text-stone-500 cursor-pointer hover:border-indigo-300 transition-colors">
+                    <option value="1">1&times;</option>
+                    <option value="0.9">0.9&times;</option>
+                    <option value="0.75">0.75&times;</option>
+                    <option value="0.5">0.5&times;</option>
+                    <option value="0.25">0.25&times;</option>
+                </select>
+            </label>
         </div>
     </nav>
     <main class="max-w-2xl mx-auto px-6 py-8">

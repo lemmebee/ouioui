@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m %}
+{% block title %}{{ w.word if w else "Mot introuvable" }}{% endblock %}
+{% block content %}
+
+{% if not w %}
+<div class="text-center py-12 text-stone-400">
+    <p class="text-lg mb-2">Mot introuvable</p>
+    <a href="/vocab" class="text-indigo-600 hover:underline">Retour au vocabulaire</a>
+</div>
+{% else %}
+
+<a href="/vocab" class="text-sm text-stone-400 hover:text-indigo-600 transition-colors">&larr; Vocabulaire</a>
+
+<div class="bg-white rounded-xl border border-stone-200 p-6 mt-3">
+    <div class="flex items-start justify-between gap-4">
+        <div class="flex flex-wrap items-center gap-2">
+            <h1 class="text-2xl font-bold text-indigo-600">{{ w.word }}</h1>
+            {% if w.ipa %}<span class="text-sm text-stone-400 font-mono">\{{ w.ipa[0] }}\</span>{% endif %}
+            {{ m.speaker(w.word) }}
+            {% if w.word_en %}<span class="text-sm text-stone-400">{{ w.word_en }}</span>{% endif %}
+            {% if w.word_en and w.word_ar %}<span class="text-xs text-stone-300">&#10038;</span>{% endif %}
+            {% if w.word_ar %}<span class="text-sm text-stone-400" dir="rtl">{{ w.word_ar }}</span>{% endif %}
+        </div>
+        <button hx-delete="/api/words/{{ w.id }}"
+                hx-confirm="Supprimer ce mot ?"
+                hx-on::after-request="window.location='/vocab'"
+                class="text-stone-300 hover:text-red-500 transition-colors text-lg shrink-0" title="Supprimer">
+            &#10005;
+        </button>
+    </div>
+
+    {% if w.word_types %}
+    <div class="flex flex-wrap gap-1.5 mt-2">
+        {% for wt in w.word_types %}
+        <span class="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-xs font-medium">{{ wt }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if w.next_review %}
+    <p class="text-xs text-stone-400 mt-3">Prochaine revision: {{ w.next_review }}</p>
+    {% endif %}
+
+    {% if w.etymology %}
+    <p class="text-stone-500 text-sm italic mt-4 pt-3 border-t border-stone-100">{{ w.etymology }}</p>
+    {% endif %}
+
+    {% if w.glosses_en_native %}
+    <div class="mt-4 pt-3 border-t border-stone-100">
+        <h2 class="text-sm font-semibold text-stone-400 uppercase tracking-wide mb-1">&#127468;&#127463; Wiktionary</h2>
+        <ul class="space-y-1">
+            {% for g in w.glosses_en_native %}
+            <li class="text-stone-600 text-sm">{{ g }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if w.translations %}
+    <div class="mt-4 pt-3 border-t border-stone-100">
+        <h2 class="text-sm font-semibold text-stone-400 uppercase tracking-wide mb-1">
+            &#127468;&#127463; &#8594; &#127467;&#127479; Traductions
+        </h2>
+        <ul class="space-y-1">
+            {% for t in w.translations %}
+            <li class="text-stone-600 text-sm">{{ t }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <div class="mt-4 pt-3 border-t border-stone-100">
+        <h2 class="text-sm font-semibold text-stone-400 uppercase tracking-wide mb-2">
+            Definitions
+            {% if w.senses %}<span class="text-stone-300 normal-case font-normal">({{ w.senses|length }})</span>{% endif %}
+        </h2>
+        {% if w.senses %}
+        <ul class="space-y-1">
+            {% for s in w.senses %}
+            {{ m.sense(s, w.word, loop.index0, uid=w.id) }}
+            {% endfor %}
+        </ul>
+        {% else %}
+        {# Saved before the Wiktionary migration; the backfill fills these in. #}
+        <ul class="text-sm text-stone-600 space-y-0.5">
+            {% for d in w.definitions %}
+            <li>{{ d }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+
+    <div class="mt-4">
+        {{ m.conjugation(w.conjugation, w.id) }}
+        {{ m.chips("Synonymes", w.synonyms) }}
+        {{ m.chips("Hyperonymes", w.hypernyms, "bg-sky-50 text-sky-700") }}
+        {{ m.chips("Apparentes", w.related) }}
+        {{ m.chips("Derives", w.derived, "bg-violet-50 text-violet-700") }}
+        {{ m.chips("Proverbes", w.proverbs, "bg-amber-50 text-amber-700") }}
+        {{ m.chips("Homonymes", w.homonyms, "bg-amber-50 text-amber-700") }}
+
+        {% if w.forms %}
+        <div class="mb-4">
+            <h2 class="text-sm font-semibold text-stone-400 uppercase tracking-wide mb-2">Formes</h2>
+            <div class="flex flex-wrap gap-2">
+                {% for f in w.forms %}
+                <span class="px-2 py-0.5 bg-stone-100 rounded text-sm text-stone-600">
+                    {{ f.form }}{% if f.tags %}<span class="text-stone-400 text-xs ml-1">{{ f.tags|join(", ") }}</span>{% endif %}
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

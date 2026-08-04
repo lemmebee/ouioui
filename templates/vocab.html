@@ -2,17 +2,6 @@
 {% import "partials/_macros.html" as m %}
 {% block title %}Vocabulaire{% endblock %}
 {% block content %}
-<style>
-    .word-details { max-height: 6rem; overflow: hidden; position: relative; transition: max-height 0.3s ease; }
-    .word-details.expanded { max-height: none; }
-    .word-details:not(.expanded)::after {
-        content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2.5rem;
-        background: linear-gradient(transparent, white);
-    }
-    .expand-btn .less { display: none; }
-    .expand-btn.active .more { display: none; }
-    .expand-btn.active .less { display: inline; }
-</style>
 <h1 class="text-2xl font-bold mb-6">Vocabulaire <span class="text-stone-400 font-normal text-lg">({{ words|length }})</span></h1>
 
 {% if not words %}
@@ -28,12 +17,12 @@
         <div class="flex items-start justify-between">
             <div class="flex-1">
                 <div class="flex flex-wrap items-center gap-1.5">
-                    <span class="font-bold text-lg text-indigo-600">{{ w.word }}</span>
+                    <a href="/word/{{ w.id }}" class="font-bold text-lg text-indigo-600 hover:underline">{{ w.word }}</a>
                     {% if w.ipa %}<span class="text-xs text-stone-400 font-mono">\{{ w.ipa[0] }}\</span>{% endif %}
                     {% if w.word_en %}<span class="text-sm text-stone-400">{{ w.word_en }}</span>{% endif %}
                     {% if w.word_en and w.word_ar %}<span class="text-xs text-stone-300">&#10038;</span>{% endif %}
                     {% if w.word_ar %}<span class="text-sm text-stone-400" dir="rtl">{{ w.word_ar }}</span>{% endif %}
-                    <button onclick="speak(this.dataset.text)" data-text="{{ w.word }}" class="text-stone-400 hover:text-indigo-600 transition-colors text-sm" title="Ecouter">&#128264;</button>
+                    {{ m.speaker(w.word) }}
                 </div>
                 {% if w.word_types %}
                 <div class="flex flex-wrap gap-1 mt-1">
@@ -42,41 +31,16 @@
                     {% endfor %}
                 </div>
                 {% endif %}
-                <div class="word-details mt-2" id="details-{{ w.id }}">
-                    {% if w.etymology %}
-                    <p class="text-xs text-stone-400 italic mb-2">{{ w.etymology }}</p>
-                    {% endif %}
-                    {% if w.senses %}
-                    <ul class="space-y-1">
-                        {% for s in w.senses %}
-                        {{ m.sense(s, w.word, loop.index0, uid=w.id) }}
-                        {% endfor %}
-                    </ul>
-                    {% else %}
-                    {# Saved before the Wiktionary migration; backfill fills these in. #}
-                    <ul class="text-sm text-stone-600 space-y-0.5">
-                        {% for d in w.definitions %}
-                        <li>{{ d }}</li>
-                        {% endfor %}
-                    </ul>
-                    {% endif %}
-                    {{ m.conjugation(w.conjugation, w.id) }}
-                    {% if w.synonyms %}
-                    <div class="mt-2 text-xs text-stone-400">
-                        Syn: {{ w.synonyms[:8]|join(', ') }}
-                    </div>
-                    {% endif %}
-                    {% if w.derived %}
-                    <div class="mt-1 text-xs text-stone-400">
-                        Derives: {{ w.derived[:8]|join(', ') }}
-                    </div>
-                    {% endif %}
-                </div>
-                <button onclick="var d=document.getElementById('details-{{ w.id }}');d.classList.toggle('expanded');this.classList.toggle('active');"
-                        class="expand-btn text-xs text-indigo-600 hover:underline mt-1">
-                    <span class="more">Voir plus</span>
-                    <span class="less">Voir moins</span>
-                </button>
+                {# Preview only: the full entry lives on /word/<id>. #}
+                {% set preview = w.senses[0].fr if w.senses else (w.definitions[0] if w.definitions else "") %}
+                {% if preview %}
+                <p class="mt-2 text-sm text-stone-600">{{ preview }}</p>
+                {% endif %}
+                {% if w.senses and w.senses|length > 1 %}
+                <a href="/word/{{ w.id }}" class="inline-block mt-1 text-xs text-indigo-600 hover:underline">
+                    {{ w.senses|length }} definitions{% if w.conjugation %}, conjugaison{% endif %} &rarr;
+                </a>
+                {% endif %}
             </div>
             <button hx-delete="/api/words/{{ w.id }}" hx-target="closest .word-card" hx-swap="outerHTML swap:300ms"
                     hx-confirm="Supprimer ce mot ?"

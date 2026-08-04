@@ -17,7 +17,7 @@
         <div class="text-sm text-stone-400 mb-2">Que signifie cette expression ?</div>
         <div class="text-3xl font-bold text-indigo-600">
             {{ card.french }}
-            <button onclick="speak(this.dataset.text)" data-text="{{ card.french }}" class="text-stone-400 hover:text-indigo-600 transition-colors align-middle text-xl" title="Ecouter">&#128264;</button>
+            {{ m.speaker(card.french, "text-xl") }}
         </div>
     </div>
 
@@ -66,7 +66,7 @@
         <div class="text-sm text-stone-400 mb-2">Que signifie ce mot ?</div>
         <div class="text-3xl font-bold text-indigo-600">
             {{ card.word }}
-            <button onclick="speak(this.dataset.text)" data-text="{{ card.word }}" class="text-stone-400 hover:text-indigo-600 transition-colors align-middle text-xl" title="Ecouter">&#128264;</button>
+            {{ m.speaker(card.word, "text-xl") }}
         </div>
     </div>
 

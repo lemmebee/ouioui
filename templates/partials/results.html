@@ -9,7 +9,7 @@
         <div class="flex flex-wrap items-center gap-2">
             <h2 class="text-xl font-bold text-indigo-600">{{ r.word }}</h2>
             {% if r.ipa %}<span class="text-sm text-stone-400 font-mono">\{{ r.ipa[0] }}\</span>{% endif %}
-            <button onclick="speak(this.dataset.text)" data-text="{{ r.word }}" class="text-stone-400 hover:text-indigo-600 transition-colors" title="Ecouter">&#128264;</button>
+            {{ m.speaker(r.word) }}
             {% if r.word_en %}<span class="text-sm text-stone-400">{{ r.word_en }}</span>{% endif %}
             {% if r.word_en and r.word_ar %}<span class="text-xs text-stone-300">&#10038;</span>{% endif %}
             {% if r.word_ar %}<span class="text-sm text-stone-400" dir="rtl">{{ r.word_ar }}</span>{% endif %}

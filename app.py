@@ -78,6 +78,16 @@ def expressions_page(request: Request):
     })
 
 
+@app.get("/word/{word_id}", response_class=HTMLResponse)
+def word_detail(request: Request, word_id: int):
+    word = db.get_word(word_id)
+    if not word:
+        return templates.TemplateResponse(
+            request, "word.html", {"request": request, "word": None}, status_code=404
+        )
+    return templates.TemplateResponse(request, "word.html", {"request": request, "w": word})
+
+
 @app.get("/quiz", response_class=HTMLResponse)
 def quiz_page(request: Request):
     return templates.TemplateResponse(request, "quiz.html", {"request": request})

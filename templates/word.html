@@ -30,18 +30,22 @@
         </button>
     </div>
 
-    {% if w.word_types %}
-    <div class="flex flex-wrap gap-1.5 mt-2">
-        {% for wt in w.word_types %}
-        <span class="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-xs font-medium">{{ wt }}</span>
-        {% endfor %}
+    <div class="flex flex-wrap items-center justify-between gap-2 mt-2">
+        <div class="flex flex-wrap gap-1.5">
+            {% for wt in w.word_types %}
+            <span class="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-xs font-medium">{{ wt }}</span>
+            {% endfor %}
+        </div>
+        {{ m.conjugation_toggle(w.conjugation, w.id) }}
     </div>
-    {% endif %}
 
     {% if w.next_review %}
     <p class="text-xs text-stone-400 mt-3">Prochaine revision: {{ w.next_review }}</p>
     {% endif %}
 
+    <div class="mt-4">{{ m.conjugation_panel(w.conjugation, w.id) }}</div>
+
+    <div id="mode-entry-{{ w.id }}">
     {% if w.etymology %}
     <p class="text-stone-500 text-sm italic mt-4 pt-3 border-t border-stone-100">{{ w.etymology }}</p>
     {% endif %}
@@ -92,7 +96,6 @@
     </div>
 
     <div class="mt-4">
-        {{ m.conjugation(w.conjugation, w.id) }}
         {{ m.chips("Synonymes", w.synonyms) }}
         {{ m.chips("Hyperonymes", w.hypernyms, "bg-sky-50 text-sky-700") }}
         {{ m.chips("Apparentes", w.related) }}
@@ -113,6 +116,7 @@
         </div>
         {% endif %}
     </div>
+    </div>{# /mode-entry #}
 </div>
 {% endif %}
 {% endblock %}

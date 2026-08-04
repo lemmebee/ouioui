@@ -28,14 +28,18 @@
         </div>
     </div>
 
-    {% if r.word_types %}
-    <div class="flex flex-wrap gap-1.5 mb-4">
-        {% for wt in r.word_types %}
-        <span class="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-xs font-medium">{{ wt }}</span>
-        {% endfor %}
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <div class="flex flex-wrap gap-1.5">
+            {% for wt in r.word_types %}
+            <span class="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-xs font-medium">{{ wt }}</span>
+            {% endfor %}
+        </div>
+        {{ m.conjugation_toggle(r.conjugation, r.word) }}
     </div>
-    {% endif %}
 
+    {{ m.conjugation_panel(r.conjugation, r.word) }}
+
+    <div id="mode-entry-{{ r.word }}">
     {% if r.etymology %}
     <p class="text-stone-500 text-sm italic mb-4 pb-3 border-b border-stone-100">{{ r.etymology }}</p>
     {% endif %}
@@ -78,8 +82,6 @@
     </div>
     {% endif %}
 
-    {{ m.conjugation(r.conjugation, r.word) }}
-
     {{ m.chips("Synonymes", r.synonyms) }}
     {{ m.chips("Hyperonymes", r.hypernyms, "bg-sky-50 text-sky-700") }}
     {{ m.chips("Apparentes", r.related) }}
@@ -98,5 +100,6 @@
         </div>
     </div>
     {% endif %}
+    </div>{# /mode-entry #}
 </div>
 {% endif %}

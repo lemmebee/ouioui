@@ -16,7 +16,7 @@
         </div>
         <div id="save-btn" class="shrink-0">
             {% if already_saved %}
-            <span class="text-stone-400 text-sm">Deja sauvegarde</span>
+            <span class="text-stone-400 text-sm">Déjà sauvegardé</span>
             {% else %}
             <button hx-post="/api/save"
                     hx-vals='{"word": {{ r.word|tojson }}}'
@@ -71,7 +71,7 @@
     {% if r.senses %}
     <div class="mb-4">
         <h3 class="text-sm font-semibold text-stone-400 uppercase tracking-wide mb-2">
-            {% if r.source == 'en-fr' %}En francais{% else %}Definitions{% endif %}
+            {% if r.source == 'en-fr' %}En français{% else %}Définitions{% endif %}
             <span class="text-stone-300 normal-case font-normal">({{ r.senses|length }})</span>
         </h3>
         <ul class="space-y-1">
@@ -84,8 +84,8 @@
 
     {{ m.chips("Synonymes", r.synonyms) }}
     {{ m.chips("Hyperonymes", r.hypernyms, "bg-sky-50 text-sky-700") }}
-    {{ m.chips("Apparentes", r.related) }}
-    {{ m.chips("Derives", r.derived, "bg-violet-50 text-violet-700") }}
+    {{ m.chips("Apparentés", r.related) }}
+    {{ m.chips("Dérivés", r.derived, "bg-violet-50 text-violet-700") }}
     {{ m.chips("Proverbes", r.proverbs, "bg-amber-50 text-amber-700") }}
 
     {% if r.forms %}

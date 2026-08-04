@@ -5,9 +5,9 @@
 {% macro speaker(text, size="text-sm") %}
 <span class="inline-flex items-center gap-0.5 align-middle">
     <button onclick="speak(this.dataset.text)" data-text="{{ text }}"
-            class="{{ size }} text-stone-400 hover:text-indigo-600 transition-colors" title="Ecouter">&#128264;</button>
+            class="{{ size }} text-stone-400 hover:text-indigo-600 transition-colors" title="Écouter">&#128264;</button>
     <button onclick="speakSlow(this.dataset.text)" data-text="{{ text }}"
-            class="text-xs text-stone-300 hover:text-indigo-600 transition-colors" title="Ecouter lentement">&#128034;</button>
+            class="text-xs text-stone-300 hover:text-indigo-600 transition-colors" title="Écouter lentement">&#128034;</button>
 </span>
 {% endmacro %}
 

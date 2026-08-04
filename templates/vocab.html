@@ -6,8 +6,8 @@
 
 {% if not words %}
 <div class="text-center py-12 text-stone-400">
-    <p class="text-lg mb-2">Aucun mot sauvegarde</p>
-    <a href="/search" class="text-indigo-600 hover:underline">Chercher des mots a ajouter</a>
+    <p class="text-lg mb-2">Aucun mot sauvegardé</p>
+    <a href="/search" class="text-indigo-600 hover:underline">Chercher des mots à ajouter</a>
 </div>
 {% endif %}
 
@@ -38,7 +38,7 @@
                 {% endif %}
                 {% if w.senses and w.senses|length > 1 %}
                 <a href="/word/{{ w.id }}" class="inline-block mt-1 text-xs text-indigo-600 hover:underline">
-                    {{ w.senses|length }} definitions{% if w.conjugation %}, conjugaison{% endif %} &rarr;
+                    {{ w.senses|length }} définitions{% if w.conjugation %}, conjugaison{% endif %} &rarr;
                 </a>
                 {% endif %}
             </div>
@@ -50,7 +50,7 @@
         </div>
         {% if w.next_review %}
         <div class="mt-2 text-xs text-stone-400">
-            Prochaine revision: {{ w.next_review }}
+            Prochaine révision: {{ w.next_review }}
         </div>
         {% endif %}
     </div>

@@ -20,14 +20,14 @@
     </div>
     {% if e.next_review %}
     <div class="mt-2 text-xs text-stone-400">
-        Prochaine revision: {{ e.next_review }}
+        Prochaine révision: {{ e.next_review }}
     </div>
     {% endif %}
 </div>
 {% endfor %}
 {% if not expressions %}
 <div class="text-center py-12 text-stone-400">
-    <p class="text-lg mb-2">Aucune expression sauvegardee</p>
+    <p class="text-lg mb-2">Aucune expression sauvegardée</p>
     <p class="text-sm">Ajoute des expressions avec le formulaire ci-dessus</p>
 </div>
 {% endif %}

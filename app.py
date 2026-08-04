@@ -34,6 +34,7 @@ def _toast(message: str, kind: str = "success") -> dict[str, str]:
 @app.on_event("startup")
 def startup():
     db.init_db()
+    db.repair_conjugations()
     threading.Thread(target=db.backfill_word_fields, daemon=True).start()
 
 

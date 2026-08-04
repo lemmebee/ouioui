@@ -106,6 +106,56 @@ def init_db():
     conn.close()
 
 
+def _dedupe_conjugation(table: list[dict]) -> tuple[list[dict], bool]:
+    """Drop repeated forms within each tense. Returns (table, changed)."""
+    changed = False
+    for group in table:
+        seen, forms = set(), []
+        for f in group.get("forms", []):
+            if f not in seen:
+                seen.add(f)
+                forms.append(f)
+        if len(forms) != len(group.get("forms", [])):
+            group["forms"] = forms
+            changed = True
+    return table, changed
+
+
+def repair_conjugations():
+    """Fix rows stored before homonymous verb entries were deduplicated.
+
+    A page with two etymologies of the same verb ("écarter") contributed two
+    full tables, so every tense was listed twice. Repaired in place rather than
+    by re-fetching, because a re-fetch would rebuild the senses too and, with no
+    DeepL quota left, would replace existing translations with empty ones.
+    """
+    conn = get_db()
+    for table, key, col in (("words", "id", "conjugation"), ("dict_cache", "word", "payload")):
+        rows = conn.execute(f"SELECT {key}, {col} FROM {table}").fetchall()
+        for r in rows:
+            raw = r[col]
+            if not raw or raw == "[]":
+                continue
+            try:
+                data = json.loads(raw)
+            except json.JSONDecodeError:
+                continue
+            if col == "payload":
+                conj, changed = _dedupe_conjugation(data.get("conjugation") or [])
+                if not changed:
+                    continue
+                data["conjugation"] = conj
+                new = json.dumps(data, ensure_ascii=False)
+            else:
+                conj, changed = _dedupe_conjugation(data)
+                if not changed:
+                    continue
+                new = json.dumps(conj, ensure_ascii=False)
+            conn.execute(f"UPDATE {table} SET {col} = ? WHERE {key} = ?", (new, r[key]))
+    conn.commit()
+    conn.close()
+
+
 ## --- Lookup cache ---
 # A word costs two kaikki fetches plus two DeepL calls the first time it is
 # looked up, and nothing on every lookup after that.

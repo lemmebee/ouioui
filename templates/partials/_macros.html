@@ -1,0 +1,106 @@
+{# Shared rendering for a Wiktionary sense: French gloss with its aligned
+   English and Arabic, plus cited examples. Used by search, vocab and quiz. #}
+
+{% macro example_body(ex) %}
+{% if ex.en %}<div class="text-stone-500 text-xs mt-1">{{ ex.en }}</div>{% endif %}
+{% if ex.ar %}<div class="text-stone-500 text-xs mt-1" dir="rtl">{{ ex.ar }}</div>{% endif %}
+{% endmacro %}
+
+{# uid scopes the element id to one card: the vocab page renders many words, and
+   without it every card would emit the same ex-<sense>-<example> ids. #}
+{% macro example(ex, word, si, ei, uid="", translatable=True) %}
+<li class="border-l-2 border-stone-200 pl-3 py-0.5">
+    <div class="text-stone-600 text-sm italic">&laquo;&nbsp;{{ ex.fr }}&nbsp;&raquo;</div>
+    {% if ex.ref %}<div class="text-stone-400 text-xs mt-0.5">{{ ex.ref }}</div>{% endif %}
+    <div id="ex-{{ uid }}-{{ si }}-{{ ei }}">
+        {% if ex.en or ex.ar %}
+            {{ example_body(ex) }}
+        {% elif translatable and deepl_enabled %}
+        <button hx-post="/api/translate-example"
+                hx-vals='{"word": {{ word|tojson }}, "sense_index": {{ si }}, "example_index": {{ ei }}}'
+                hx-target="#ex-{{ uid }}-{{ si }}-{{ ei }}" hx-swap="innerHTML"
+                class="mt-1 text-xs text-indigo-500 hover:text-indigo-700 hover:underline">
+            Traduire
+        </button>
+        {% endif %}
+    </div>
+</li>
+{% endmacro %}
+
+{% macro sense(s, word, si, uid="", translatable=True) %}
+<li class="pb-3">
+    <div class="flex flex-wrap items-baseline gap-2">
+        <span class="text-stone-400 text-xs font-medium mt-0.5">{{ si + 1 }}.</span>
+        {% for t in s.tags %}
+        <span class="px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded text-xs">{{ t }}</span>
+        {% endfor %}
+        {% for t in s.topics %}
+        <span class="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded text-xs">{{ t }}</span>
+        {% endfor %}
+        <span class="text-stone-700 flex-1 min-w-0">{{ s.fr }}</span>
+    </div>
+    {% if s.en %}<div class="text-stone-500 text-sm ml-5 mt-0.5">{{ s.en }}</div>{% endif %}
+    {% if s.ar %}<div class="text-stone-500 text-sm ml-5 mt-0.5" dir="rtl">{{ s.ar }}</div>{% endif %}
+
+    {% if s.synonyms %}
+    <div class="flex flex-wrap gap-1.5 ml-5 mt-1.5">
+        {% for syn in s.synonyms %}
+        <span class="px-2 py-0.5 bg-stone-100 rounded text-xs text-stone-600">{{ syn }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if s.examples %}
+    <ul class="ml-5 mt-2 space-y-2">
+        {% for ex in s.examples %}
+        {{ example(ex, word, si, loop.index0, uid, translatable) }}
+        {% endfor %}
+    </ul>
+    {% endif %}
+</li>
+{% endmacro %}
+
+{# Conjugation grouped by mood, collapsed by default: a full table is ~96 forms
+   and would bury the definitions. #}
+{% macro conjugation(table, uid) %}
+{% if table %}
+<details class="mb-4 group">
+    <summary class="cursor-pointer text-sm font-semibold text-stone-400 uppercase tracking-wide hover:text-indigo-600 select-none">
+        Conjugaison
+        <span class="text-stone-300 normal-case font-normal">({{ table|length }} temps)</span>
+    </summary>
+    <div class="mt-3 space-y-4">
+        {% for mood in table|map(attribute='mood')|unique %}
+        <div>
+            <div class="text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-2">{{ mood }}</div>
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {% for group in table if group.mood == mood %}
+                <div class="border border-stone-100 rounded-lg p-2.5">
+                    <div class="text-xs font-medium text-stone-500 mb-1">{{ group.tense }}</div>
+                    <ul class="space-y-0.5">
+                        {% for f in group.forms %}
+                        <li class="text-sm text-stone-700 font-mono">{{ f }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</details>
+{% endif %}
+{% endmacro %}
+
+{% macro chips(title, items, style="bg-stone-100 text-stone-600") %}
+{% if items %}
+<div class="mb-4">
+    <h3 class="text-sm font-semibold text-stone-400 uppercase tracking-wide mb-2">{{ title }}</h3>
+    <div class="flex flex-wrap gap-2">
+        {% for item in items %}
+        <span class="px-2 py-0.5 rounded text-sm {{ style }}">{{ item }}</span>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endmacro %}

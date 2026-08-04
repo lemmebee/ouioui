@@ -84,9 +84,29 @@ def _get_deepl():
     return _deepl_client
 
 
+# None until asked, then True/False. A key that has burned through its monthly
+# characters is configured but useless, so it must not count as available.
+_quota_exhausted: bool | None = None
+
+
+def quota_exhausted() -> bool:
+    global _quota_exhausted
+    if _quota_exhausted is None:
+        translator = _get_deepl()
+        if translator is None:
+            return False
+        try:
+            _quota_exhausted = bool(translator.get_usage().character.limit_reached)
+        except Exception:
+            _quota_exhausted = False   # unknown; let a real call settle it
+    return _quota_exhausted
+
+
 def deepl_available() -> bool:
-    """Whether the translation layer is configured. Drives the Traduire buttons."""
-    return bool(os.environ.get("DEEPL_API_KEY", ""))
+    """Whether translation can actually happen. Drives the Traduire buttons."""
+    if not os.environ.get("DEEPL_API_KEY", ""):
+        return False
+    return not quota_exhausted()
 
 
 # --- kaikki fetch ---
@@ -339,9 +359,13 @@ def translate_batch(texts: list[str], target: str) -> list[str]:
     translator = _get_deepl()
     if not translator:
         return []
+    global _quota_exhausted
     try:
         results = translator.translate_text(texts, source_lang="FR", target_lang=target)
         return [r.text for r in results]
+    except deepl.QuotaExceededException:
+        _quota_exhausted = True
+        return []
     except Exception:
         return []
 

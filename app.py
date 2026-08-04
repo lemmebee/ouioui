@@ -18,8 +18,9 @@ from sm2 import sm2
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
-# Without a DeepL key there is nothing behind the Traduire buttons, so hide them.
-templates.env.globals["deepl_enabled"] = dictionary.deepl_available()
+# Passed as a callable, not a value: a key can run out of quota mid-process, and
+# the Traduire buttons must disappear when there is nothing behind them.
+templates.env.globals["deepl_enabled"] = dictionary.deepl_available
 
 # Word of the day cache: {date_str: word_dict}
 _wotd_cache: dict[str, dict | None] = {}
@@ -159,8 +160,11 @@ def translate_example(
         return HTMLResponse('<span class="text-red-500 text-xs">Traduction indisponible</span>')
 
     if not example["en"] and not example["ar"]:
-        # DeepL unavailable or refused; say so rather than swapping in an empty box.
-        return HTMLResponse('<span class="text-stone-400 text-xs">Traduction indisponible</span>')
+        # Say which of the two it is: a spent quota comes back next billing period,
+        # anything else is worth retrying now.
+        reason = ("Quota de traduction atteint" if dictionary.quota_exhausted()
+                  else "Traduction indisponible")
+        return HTMLResponse(f'<span class="text-stone-400 text-xs">{reason}</span>')
 
     db.cache_put(word, record)
     if record["word"].lower() != word.lower():

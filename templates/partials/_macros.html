@@ -25,7 +25,7 @@
     <div id="ex-{{ uid }}-{{ si }}-{{ ei }}">
         {% if ex.en or ex.ar %}
             {{ example_body(ex) }}
-        {% elif translatable and deepl_enabled %}
+        {% elif translatable and deepl_enabled() %}
         <button hx-post="/api/translate-example"
                 hx-vals='{"word": {{ word|tojson }}, "sense_index": {{ si }}, "example_index": {{ ei }}}'
                 hx-target="#ex-{{ uid }}-{{ si }}-{{ ei }}" hx-swap="innerHTML"

@@ -90,7 +90,7 @@
             {% if card.senses %}
             <ul class="space-y-1 mb-3">
                 {% for s in card.senses %}
-                {{ m.sense(s, card.word, loop.index0, translatable=False) }}
+                {{ m.sense(s, card.word, loop.index0, uid=card.id, translatable=False) }}
                 {% endfor %}
             </ul>
             {% else %}

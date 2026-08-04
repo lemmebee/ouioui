@@ -231,13 +231,15 @@ def backfill_word_fields():
     """Re-fetch saved words produced by an older record version, so they pick up
     fields added since (senses, IPA, conjugation, ...). Runs once per word per
     version bump; review progress is never touched."""
-    import dictionary
     conn = get_db()
-    rows = conn.execute(
-        "SELECT id, word FROM words WHERE version IS NULL OR version != ?",
-        (dictionary.RECORD_VERSION,),
-    ).fetchall()
+    all_rows = conn.execute("SELECT id, word, senses, version FROM words").fetchall()
     conn.close()
+    # Same staleness rule as the lookup cache, so a row whose translation failed
+    # at save time is retried instead of being stuck until the next version bump.
+    rows = [
+        r for r in all_rows
+        if _is_stale({"version": r["version"], "senses": json.loads(r["senses"] or "[]")})
+    ]
     for r in rows:
         try:
             record = cached_lookup(r["word"])

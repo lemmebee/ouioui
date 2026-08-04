@@ -33,7 +33,7 @@ def startup():
 # --- Pages ---
 
 @app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
+def home(request: Request):
     today = date.today().isoformat()
     if today not in _wotd_cache:
         w = db.random_word()
@@ -58,12 +58,12 @@ async def home(request: Request):
 
 
 @app.get("/search", response_class=HTMLResponse)
-async def search_page(request: Request):
+def search_page(request: Request):
     return templates.TemplateResponse(request, "search.html", {"request": request})
 
 
 @app.get("/vocab", response_class=HTMLResponse)
-async def vocab_page(request: Request):
+def vocab_page(request: Request):
     return templates.TemplateResponse(request, "vocab.html", {
         "request": request,
         "words": db.get_all_words(),
@@ -71,7 +71,7 @@ async def vocab_page(request: Request):
 
 
 @app.get("/expressions", response_class=HTMLResponse)
-async def expressions_page(request: Request):
+def expressions_page(request: Request):
     return templates.TemplateResponse(request, "expressions.html", {
         "request": request,
         "expressions": db.get_all_expressions(),
@@ -79,14 +79,14 @@ async def expressions_page(request: Request):
 
 
 @app.get("/quiz", response_class=HTMLResponse)
-async def quiz_page(request: Request):
+def quiz_page(request: Request):
     return templates.TemplateResponse(request, "quiz.html", {"request": request})
 
 
 # --- HTMX API ---
 
 @app.post("/api/lookup", response_class=HTMLResponse)
-async def lookup(request: Request, word: str = Form("")):
+def lookup(request: Request, word: str = Form("")):
     word = word.strip()
     if not word:
         return templates.TemplateResponse(request, "partials/results.html", {
@@ -113,7 +113,7 @@ async def lookup(request: Request, word: str = Form("")):
 
 
 @app.post("/api/save", response_class=HTMLResponse)
-async def save_word(word: str = Form(...)):
+def save_word(word: str = Form(...)):
     """The full record already sits in the lookup cache, so only the word travels."""
     try:
         record = db.cached_lookup(word)
@@ -127,7 +127,7 @@ async def save_word(word: str = Form(...)):
 
 
 @app.post("/api/translate-example", response_class=HTMLResponse)
-async def translate_example(
+def translate_example(
     request: Request,
     word: str = Form(...),
     sense_index: int = Form(...),
@@ -155,13 +155,13 @@ async def translate_example(
 
 
 @app.delete("/api/words/{word_id}", response_class=HTMLResponse)
-async def delete_word(word_id: int):
+def delete_word(word_id: int):
     db.delete_word(word_id)
     return HTMLResponse("")
 
 
 @app.post("/api/expressions", response_class=HTMLResponse)
-async def add_expression(request: Request, french: str = Form(...), english: str = Form(...), note: str = Form("")):
+def add_expression(request: Request, french: str = Form(...), english: str = Form(...), note: str = Form("")):
     french, english, note = french.strip(), english.strip(), note.strip()
     if not french or not english:
         return HTMLResponse('<span class="text-red-500 text-sm">Francais et anglais requis</span>')
@@ -175,7 +175,7 @@ async def add_expression(request: Request, french: str = Form(...), english: str
 
 
 @app.delete("/api/expressions/{expr_id}", response_class=HTMLResponse)
-async def delete_expression(expr_id: int):
+def delete_expression(expr_id: int):
     db.delete_expression(expr_id)
     return HTMLResponse("")
 
@@ -198,7 +198,7 @@ def _has_any_items() -> bool:
 
 
 @app.get("/api/quiz/next", response_class=HTMLResponse)
-async def quiz_next(request: Request):
+def quiz_next(request: Request):
     card = _next_due_card()
     if card is None:
         return templates.TemplateResponse(request, "partials/quiz_card.html", {
@@ -215,7 +215,7 @@ async def quiz_next(request: Request):
 
 
 @app.post("/api/quiz/rate", response_class=HTMLResponse)
-async def quiz_rate(request: Request, word_id: int = Form(None), expr_id: int = Form(None), quality: int = Form(...)):
+def quiz_rate(request: Request, word_id: int = Form(None), expr_id: int = Form(None), quality: int = Form(...)):
     if word_id:
         card = db.get_due_card()
         if card and card["id"] == word_id:

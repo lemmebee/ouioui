@@ -19,13 +19,41 @@
             localStorage.setItem(SPEECH_RATE_KEY, rate);
         }
 
+        // Voices load asynchronously; getVoices() is empty on first call in Chrome.
+        let VOICES = [];
+        function loadVoices() { VOICES = window.speechSynthesis.getVoices() || []; }
+        loadVoices();
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+
+        function frenchVoice() {
+            if (!VOICES.length) loadVoices();
+            // Prefer a local voice: remote ones commonly ignore the rate setting,
+            // which is why picking a speed appeared to do nothing.
+            return VOICES.find(function (v) { return v.lang.indexOf('fr') === 0 && v.localService; })
+                || VOICES.find(function (v) { return v.lang.indexOf('fr') === 0; })
+                || null;
+        }
+
+        // Always audibly slower than the current setting. A fixed slow rate would
+        // match the normal button exactly once the saved speed was already low.
+        function speakSlow(word) {
+            speak(word, Math.max(speechRate() / 2, 0.15));
+        }
+
         // rate omitted -> the saved preference; passed explicitly -> one-off playback.
         function speak(word, rate) {
-            speechSynthesis.cancel();
-            const u = new SpeechSynthesisUtterance(word);
-            u.lang = 'fr-FR';
-            u.rate = rate || speechRate();
-            speechSynthesis.speak(u);
+            const r = parseFloat(rate) || speechRate();
+            window.speechSynthesis.cancel();
+            // Chrome applies the previous utterance's settings when speak() runs in
+            // the same tick as cancel(), so hand it over on the next one.
+            setTimeout(function () {
+                const u = new SpeechSynthesisUtterance(word);
+                const v = frenchVoice();
+                if (v) u.voice = v;
+                u.lang = v ? v.lang : 'fr-FR';
+                u.rate = Math.min(Math.max(r, 0.1), 10);
+                window.speechSynthesis.speak(u);
+            }, 60);
         }
 
         function markActiveRate() {

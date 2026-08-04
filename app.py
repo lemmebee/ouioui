@@ -1,3 +1,4 @@
+import json
 import random
 import threading
 from datetime import date, timedelta
@@ -24,9 +25,16 @@ templates.env.globals["deepl_enabled"] = dictionary.deepl_available()
 _wotd_cache: dict[str, dict | None] = {}
 
 
+def _toast(message: str, kind: str = "success") -> dict[str, str]:
+    """Header telling the page to pop a toast. Used where the swapped-in HTML
+    is empty, so a deletion would otherwise give no feedback at all."""
+    return {"HX-Trigger": json.dumps({"toast": {"message": message, "kind": kind}})}
+
+
 @app.on_event("startup")
 def startup():
     db.init_db()
+    db.repair_conjugations()
     threading.Thread(target=db.backfill_word_fields, daemon=True).start()
 
 
@@ -78,6 +86,16 @@ def expressions_page(request: Request):
     })
 
 
+@app.get("/word/{word_id}", response_class=HTMLResponse)
+def word_detail(request: Request, word_id: int):
+    word = db.get_word(word_id)
+    if not word:
+        return templates.TemplateResponse(
+            request, "word.html", {"request": request, "word": None}, status_code=404
+        )
+    return templates.TemplateResponse(request, "word.html", {"request": request, "w": word})
+
+
 @app.get("/quiz", response_class=HTMLResponse)
 def quiz_page(request: Request):
     return templates.TemplateResponse(request, "quiz.html", {"request": request})
@@ -102,7 +120,7 @@ def lookup(request: Request, word: str = Form("")):
 
     if not result["senses"]:
         return templates.TemplateResponse(request, "partials/results.html", {
-            "request": request, "error": f"Aucune definition trouvee pour \"{word}\"",
+            "request": request, "error": f"Aucune définition trouvée pour \"{word}\"",
         })
 
     return templates.TemplateResponse(request, "partials/results.html", {
@@ -118,12 +136,12 @@ def save_word(word: str = Form(...)):
     try:
         record = db.cached_lookup(word)
     except Exception:
-        return HTMLResponse('<span class="text-red-500 text-sm">Echec de la sauvegarde</span>')
+        return HTMLResponse('<span class="text-red-500 text-sm">Échec de la sauvegarde</span>')
     if not record.get("senses"):
-        return HTMLResponse('<span class="text-red-500 text-sm">Rien a sauvegarder</span>')
+        return HTMLResponse('<span class="text-red-500 text-sm">Rien à sauvegarder</span>')
     if db.save_word(record):
-        return HTMLResponse('<span class="text-green-600 text-sm font-medium">&#10003; Sauvegarde</span>')
-    return HTMLResponse('<span class="text-stone-400 text-sm">Deja sauvegarde</span>')
+        return HTMLResponse('<span class="text-green-600 text-sm font-medium">&#10003; Sauvegardé</span>')
+    return HTMLResponse('<span class="text-stone-400 text-sm">Déjà sauvegardé</span>')
 
 
 @app.post("/api/translate-example", response_class=HTMLResponse)
@@ -157,27 +175,27 @@ def translate_example(
 @app.delete("/api/words/{word_id}", response_class=HTMLResponse)
 def delete_word(word_id: int):
     db.delete_word(word_id)
-    return HTMLResponse("")
+    return HTMLResponse("", headers=_toast("Mot supprimé"))
 
 
 @app.post("/api/expressions", response_class=HTMLResponse)
 def add_expression(request: Request, french: str = Form(...), english: str = Form(...), note: str = Form("")):
     french, english, note = french.strip(), english.strip(), note.strip()
     if not french or not english:
-        return HTMLResponse('<span class="text-red-500 text-sm">Francais et anglais requis</span>')
+        return HTMLResponse('<span class="text-red-500 text-sm">Français et anglais requis</span>')
     result = db.save_expression(french, english, note)
     if result:
         return templates.TemplateResponse(request, "partials/expression_list.html", {
             "request": request,
             "expressions": db.get_all_expressions(),
         })
-    return HTMLResponse('<span class="text-stone-400 text-sm">Expression deja sauvegardee</span>')
+    return HTMLResponse('<span class="text-stone-400 text-sm">Expression déjà sauvegardée</span>')
 
 
 @app.delete("/api/expressions/{expr_id}", response_class=HTMLResponse)
 def delete_expression(expr_id: int):
     db.delete_expression(expr_id)
-    return HTMLResponse("")
+    return HTMLResponse("", headers=_toast("Expression supprimée"))
 
 
 def _next_due_card() -> dict | None:

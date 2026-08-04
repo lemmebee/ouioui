@@ -2,13 +2,13 @@
 {% if done %}
 <div class="text-center py-12">
     <div class="text-4xl mb-4">&#127881;</div>
-    <h2 class="text-xl font-bold mb-2">Termine pour aujourd'hui !</h2>
-    <p class="text-stone-500 mb-4">Toutes les cartes ont ete revisees.</p>
+    <h2 class="text-xl font-bold mb-2">Terminé pour aujourd'hui !</h2>
+    <p class="text-stone-500 mb-4">Toutes les cartes ont été révisées.</p>
     <a href="/search" class="text-indigo-600 hover:underline">Ajouter de nouveaux mots</a>
 </div>
 {% elif empty %}
 <div class="text-center py-12">
-    <p class="text-stone-400 text-lg mb-2">Aucune carte a reviser</p>
+    <p class="text-stone-400 text-lg mb-2">Aucune carte à réviser</p>
     <a href="/search" class="text-indigo-600 hover:underline">Chercher et sauvegarder des mots d'abord</a>
 </div>
 {% elif card.type == 'expression' %}
@@ -17,7 +17,7 @@
         <div class="text-sm text-stone-400 mb-2">Que signifie cette expression ?</div>
         <div class="text-3xl font-bold text-indigo-600">
             {{ card.french }}
-            <button onclick="speak(this.dataset.text)" data-text="{{ card.french }}" class="text-stone-400 hover:text-indigo-600 transition-colors align-middle text-xl" title="Ecouter">&#128264;</button>
+            {{ m.speaker(card.french, "text-xl") }}
         </div>
     </div>
 
@@ -56,7 +56,7 @@
     <div id="reveal-btn-expr-{{ card.id }}" class="text-center">
         <button onclick="document.getElementById('answer-expr-{{ card.id }}').classList.remove('hidden'); this.parentElement.classList.add('hidden');"
                 class="px-6 py-2 bg-stone-100 text-stone-600 rounded-lg hover:bg-stone-200 transition-colors">
-            Reveler
+            Révéler
         </button>
     </div>
 </div>
@@ -66,7 +66,7 @@
         <div class="text-sm text-stone-400 mb-2">Que signifie ce mot ?</div>
         <div class="text-3xl font-bold text-indigo-600">
             {{ card.word }}
-            <button onclick="speak(this.dataset.text)" data-text="{{ card.word }}" class="text-stone-400 hover:text-indigo-600 transition-colors align-middle text-xl" title="Ecouter">&#128264;</button>
+            {{ m.speaker(card.word, "text-xl") }}
         </div>
     </div>
 
@@ -138,7 +138,7 @@
     <div id="reveal-btn-{{ card.id }}" class="text-center">
         <button onclick="document.getElementById('answer-{{ card.id }}').classList.remove('hidden'); this.parentElement.classList.add('hidden');"
                 class="px-6 py-2 bg-stone-100 text-stone-600 rounded-lg hover:bg-stone-200 transition-colors">
-            Reveler
+            Révéler
         </button>
     </div>
 </div>

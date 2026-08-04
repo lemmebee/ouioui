@@ -1,16 +1,17 @@
 {% extends "base.html" %}
+{% import "partials/_macros.html" as m %}
 {% block title %}Accueil{% endblock %}
 {% block content %}
 <div class="text-center mb-10">
     <h1 class="text-3xl font-bold mb-2">Bienvenue sur OuiOui</h1>
-    <p class="text-stone-500">Ton compagnon pour apprendre le francais</p>
+    <p class="text-stone-500">Ton compagnon pour apprendre le français</p>
 </div>
 
 <div class="grid gap-4 sm:grid-cols-4 mb-6">
     <a href="/search" class="block p-5 bg-white rounded-xl border border-stone-200 hover:border-indigo-300 transition-colors">
         <div class="text-2xl mb-2">&#128269;</div>
         <div class="font-semibold">Chercher</div>
-        <div class="text-sm text-stone-500">Definitions, synonymes</div>
+        <div class="text-sm text-stone-500">Définitions, synonymes</div>
     </a>
     <a href="/vocab" class="block p-5 bg-white rounded-xl border border-stone-200 hover:border-indigo-300 transition-colors">
         <div class="text-2xl mb-2">&#128218;</div>
@@ -25,7 +26,7 @@
     <a href="/quiz" class="block p-5 bg-white rounded-xl border border-stone-200 hover:border-indigo-300 transition-colors">
         <div class="text-2xl mb-2">&#127891;</div>
         <div class="font-semibold">Quiz</div>
-        <div class="text-sm text-stone-500">{{ due_count }} carte{{ 's' if due_count != 1 else '' }} a reviser</div>
+        <div class="text-sm text-stone-500">{{ due_count }} carte{{ 's' if due_count != 1 else '' }} à réviser</div>
     </a>
 </div>
 
@@ -36,9 +37,14 @@
     </div>
     {% if wotd %}
     <div class="flex items-center gap-2 mb-3">
+        {# The curated fallback word is not saved, so it has no page to link to. #}
+        {% if wotd.id %}
+        <a href="/word/{{ wotd.id }}" class="text-xl font-bold text-indigo-600 hover:underline">{{ wotd.word }}</a>
+        {% else %}
         <span class="text-xl font-bold text-indigo-600">{{ wotd.word }}</span>
+        {% endif %}
         {% if wotd.ipa %}<span class="text-xs text-stone-400 font-mono">\{{ wotd.ipa[0] }}\</span>{% endif %}
-        <button onclick="speak(this.dataset.text)" data-text="{{ wotd.word }}" class="text-stone-400 hover:text-indigo-600 transition-colors" title="Ecouter">&#128264;</button>
+        {{ m.speaker(wotd.word) }}
     </div>
     <ul class="text-sm text-stone-600 space-y-1.5">
         {% for d in wotd.definitions[:3] %}

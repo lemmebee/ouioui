@@ -205,7 +205,10 @@ def _build_conjugation(entries: list[dict]) -> list[dict]:
     for mood, tense, wanted in CONJUGATION_TABLE:
         forms = buckets.get(frozenset(wanted))
         if forms:
-            table.append({"mood": mood, "tense": tense, "forms": forms})
+            # A page can carry several homonymous verbs, each with a full table
+            # ("écarter" has two etymologies), which would otherwise repeat every
+            # tense. Forms include their pronoun, so equal strings are redundant.
+            table.append({"mood": mood, "tense": tense, "forms": _dedup(forms)})
     return table
 
 

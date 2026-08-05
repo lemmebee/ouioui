@@ -1,0 +1,13 @@
+{# Shown only while something is struck. Swapped out of band by the per-card
+   toggle so the count stays right without re-rendering the whole list. #}
+<span id="strike-actions-{{ kind }}"{% if oob %} hx-swap-oob="true"{% endif %}>
+    {% if struck_count %}
+    <button hx-post="/api/{{ kind }}/unstrike-all"
+            hx-target="#{{ 'vocab-list' if kind == 'words' else 'expression-list' }}"
+            hx-swap="innerHTML"
+            class="ml-3 align-middle px-2 py-1 text-xs font-medium text-stone-500 border border-stone-200
+                   rounded-lg hover:border-indigo-300 hover:text-indigo-600 transition-colors">
+        Tout démarquer ({{ struck_count }})
+    </button>
+    {% endif %}
+</span>

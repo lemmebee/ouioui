@@ -358,6 +358,26 @@ def toggle_struck(table: str, row_id: int) -> bool:
     return bool(r and r["struck"])
 
 
+def unstrike_all(table: str) -> int:
+    """Clear every strike in a table. Returns how many were cleared."""
+    if table not in ("words", "expressions"):
+        raise ValueError(table)
+    conn = get_db()
+    cur = conn.execute(f"UPDATE {table} SET struck = 0 WHERE COALESCE(struck, 0) = 1")
+    conn.commit()
+    conn.close()
+    return cur.rowcount
+
+
+def struck_count(table: str) -> int:
+    if table not in ("words", "expressions"):
+        raise ValueError(table)
+    conn = get_db()
+    r = conn.execute(f"SELECT COUNT(*) AS c FROM {table} WHERE COALESCE(struck, 0) = 1").fetchone()
+    conn.close()
+    return r["c"]
+
+
 def update_word_senses(word: str, senses: list[dict]):
     """Persist sense changes (e.g. an example translated on demand) if the word is saved."""
     conn = get_db()

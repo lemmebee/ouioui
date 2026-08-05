@@ -313,10 +313,12 @@ def backfill_word_fields():
         if not record.get("senses"):
             continue
         # Only write fields the new record actually fills, so legacy-only data
-        # (notably homonyms, which Wiktionary does not carry) survives.
+        # (notably homonyms, which Wiktionary does not carry) survives. `struck`
+        # is the user's own mark and is absent from lookup records, so it would
+        # otherwise be written back as 0 and silently clear their selection.
         fields = [
             f for f in WORD_FIELDS
-            if f != "word" and _encode(record, f) not in ("", "[]")
+            if f not in ("word", "struck") and _encode(record, f) not in ("", "[]")
         ]
         assignments = ", ".join(f"{f}=?" for f in fields)
         conn = get_db()

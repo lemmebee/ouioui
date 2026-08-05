@@ -8,6 +8,7 @@
         hx-target="closest .{{ 'word-card' if kind == 'words' else 'expr-card' }}"
         hx-swap="outerHTML"
         aria-pressed="{{ 'true' if struck else 'false' }}"
+        aria-label="{{ 'Annuler le barré' if struck else 'Barrer' }}"
         title="{{ 'Annuler le barré' if struck else 'Barrer' }}"
         class="strike-toggle text-stone-300 hover:text-indigo-600 transition-colors text-lg leading-none px-1">
     &minus;

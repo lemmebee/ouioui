@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% import "partials/_macros.html" as m %}
 {% block title %}Vocabulaire{% endblock %}
 {% block content %}
 <h1 class="text-2xl font-bold mb-6">Vocabulaire <span class="text-stone-400 font-normal text-lg">({{ words|length }})</span></h1>
@@ -13,47 +12,7 @@
 
 <div class="space-y-3" id="vocab-list">
     {% for w in words %}
-    <div class="word-card bg-white rounded-xl border border-stone-200 p-4">
-        <div class="flex items-start justify-between">
-            <div class="flex-1">
-                <div class="flex flex-wrap items-center gap-1.5">
-                    <a href="/word/{{ w.id }}" class="font-bold text-lg text-indigo-600 hover:underline">{{ w.word }}</a>
-                    {% if w.ipa %}<span class="text-xs text-stone-400 font-mono">\{{ w.ipa[0] }}\</span>{% endif %}
-                    {% if w.word_en %}<span class="text-sm text-stone-400">{{ w.word_en }}</span>{% endif %}
-                    {% if w.word_en and w.word_ar %}<span class="text-xs text-stone-300">&#10038;</span>{% endif %}
-                    {% if w.word_ar %}<span class="text-sm text-stone-400" dir="rtl">{{ w.word_ar }}</span>{% endif %}
-                    {{ m.speaker(w.word) }}
-                </div>
-                {% if w.word_types %}
-                <div class="flex flex-wrap gap-1 mt-1">
-                    {% for wt in w.word_types %}
-                    <span class="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-xs font-medium">{{ wt }}</span>
-                    {% endfor %}
-                </div>
-                {% endif %}
-                {# Preview only: the full entry lives on /word/<id>. #}
-                {% set preview = w.senses[0].fr if w.senses else (w.definitions[0] if w.definitions else "") %}
-                {% if preview %}
-                <p class="mt-2 text-sm text-stone-600">{{ preview }}</p>
-                {% endif %}
-                {% if w.senses and w.senses|length > 1 %}
-                <a href="/word/{{ w.id }}" class="inline-block mt-1 text-xs text-indigo-600 hover:underline">
-                    {{ w.senses|length }} définitions{% if w.conjugation %}, conjugaison{% endif %} &rarr;
-                </a>
-                {% endif %}
-            </div>
-            <button hx-delete="/api/words/{{ w.id }}" hx-target="closest .word-card" hx-swap="outerHTML swap:300ms"
-                    hx-confirm="Supprimer ce mot ?"
-                    class="text-stone-300 hover:text-red-500 transition-colors ml-4 text-lg">
-                &#10005;
-            </button>
-        </div>
-        {% if w.next_review %}
-        <div class="mt-2 text-xs text-stone-400">
-            Prochaine révision: {{ w.next_review }}
-        </div>
-        {% endif %}
-    </div>
+    {% include "partials/word_card.html" %}
     {% endfor %}
 </div>
 {% endblock %}

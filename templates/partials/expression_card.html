@@ -1,0 +1,28 @@
+{% import "partials/_macros.html" as m %}
+<div class="expr-card group bg-white rounded-xl border border-stone-200 p-4{% if e.struck %} is-struck{% endif %}">
+    <div class="flex items-start justify-between">
+        <div class="flex-1 min-w-0">
+            <div class="flex flex-wrap items-center gap-1.5">
+                <span class="card-title font-bold text-lg text-indigo-600">{{ e.french }}</span>
+                {{ m.speaker(e.french) }}
+            </div>
+            <p class="mt-1 text-sm text-stone-600">{{ e.english }}</p>
+            {% if e.note %}
+            <p class="mt-1 text-xs text-stone-400 italic">{{ e.note }}</p>
+            {% endif %}
+        </div>
+        <div class="flex items-center gap-1 ml-4 shrink-0">
+            {{ m.strike_toggle("expressions", e.id, e.struck) }}
+            <button hx-delete="/api/expressions/{{ e.id }}" hx-target="closest .expr-card" hx-swap="outerHTML swap:300ms"
+                    hx-confirm="Supprimer cette expression ?"
+                    class="text-stone-300 hover:text-red-500 transition-colors text-lg" title="Supprimer">
+                &#10005;
+            </button>
+        </div>
+    </div>
+    {% if e.next_review %}
+    <div class="mt-2 text-xs text-stone-400">
+        Prochaine révision: {{ e.next_review }}
+    </div>
+    {% endif %}
+</div>

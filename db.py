@@ -43,6 +43,8 @@ WORD_COLUMNS = [
     ("conjugation", "TEXT DEFAULT '[]'"),
     # Which dictionary.RECORD_VERSION produced this row; drives the backfill.
     ("version", "INTEGER DEFAULT 0"),
+    # Struck through in the list: kept and reviewable, just marked as done with.
+    ("struck", "INTEGER DEFAULT 0"),
 ]
 
 # JSON-encoded list columns, decoded on read.
@@ -61,6 +63,11 @@ def init_db():
         for name, decl in WORD_COLUMNS:
             if name not in cols:
                 conn.execute(f"ALTER TABLE words ADD COLUMN {name} {decl}")
+        conn.commit()
+
+    ecols = [r[1] for r in conn.execute("PRAGMA table_info(expressions)").fetchall()]
+    if ecols and "struck" not in ecols:
+        conn.execute("ALTER TABLE expressions ADD COLUMN struck INTEGER DEFAULT 0")
         conn.commit()
 
     added = ",\n            ".join(f"{name:<18} {decl}" for name, decl in WORD_COLUMNS)
@@ -91,6 +98,7 @@ def init_db():
             french      TEXT NOT NULL UNIQUE,
             english     TEXT NOT NULL,
             note        TEXT DEFAULT '',
+            struck      INTEGER DEFAULT 0,
             created_at  TEXT DEFAULT (datetime('now'))
         );
         CREATE TABLE IF NOT EXISTS expression_reviews (
@@ -221,7 +229,7 @@ WORD_FIELDS = [
     "word", "word_ar", "word_en", "word_types", "definitions", "definitions_en",
     "definitions_ar", "translations", "synonyms", "homonyms", "senses", "ipa",
     "etymology", "derived", "proverbs", "related", "hypernyms", "forms",
-    "glosses_en_native", "conjugation", "version",
+    "glosses_en_native", "conjugation", "version", "struck",
 ]
 
 
@@ -229,7 +237,7 @@ def _encode(record: dict, field: str):
     value = record.get(field)
     if field in JSON_LIST_FIELDS:
         return json.dumps(value or [], ensure_ascii=False)
-    if field == "version":
+    if field in ("version", "struck"):
         return int(value or 0)
     return value or ""
 
@@ -241,7 +249,14 @@ def _row_to_word(r: sqlite3.Row) -> dict:
         if field not in keys:
             continue
         raw = r[field]
-        out[field] = json.loads(raw or "[]") if field in JSON_LIST_FIELDS else (raw or "")
+        if field in JSON_LIST_FIELDS:
+            out[field] = json.loads(raw or "[]")
+        elif field == "struck":
+            out[field] = bool(raw)
+        elif field == "version":
+            out[field] = int(raw or 0)
+        else:
+            out[field] = raw or ""
     for extra in ("created_at", "next_review", "repetitions", "easiness", "interval"):
         if extra in keys:
             out[extra] = r[extra]
@@ -322,9 +337,25 @@ def word_exists(word: str) -> bool:
 
 def get_word(word_id: int) -> dict | None:
     conn = get_db()
-    r = conn.execute("SELECT * FROM words WHERE id = ?", (word_id,)).fetchone()
+    r = conn.execute(
+        "SELECT w.*, r.next_review FROM words w "
+        "LEFT JOIN reviews r ON w.id = r.word_id WHERE w.id = ?",
+        (word_id,),
+    ).fetchone()
     conn.close()
     return _row_to_word(r) if r else None
+
+
+def toggle_struck(table: str, row_id: int) -> bool:
+    """Flip the struck flag and return the new state."""
+    if table not in ("words", "expressions"):
+        raise ValueError(table)
+    conn = get_db()
+    conn.execute(f"UPDATE {table} SET struck = 1 - COALESCE(struck, 0) WHERE id = ?", (row_id,))
+    conn.commit()
+    r = conn.execute(f"SELECT struck FROM {table} WHERE id = ?", (row_id,)).fetchone()
+    conn.close()
+    return bool(r and r["struck"])
 
 
 def update_word_senses(word: str, senses: list[dict]):
@@ -408,17 +439,31 @@ def get_all_expressions() -> list[dict]:
         "SELECT e.*, r.next_review FROM expressions e LEFT JOIN expression_reviews r ON e.id = r.expr_id ORDER BY e.created_at DESC"
     ).fetchall()
     conn.close()
-    return [
-        {
-            "id": r["id"],
-            "french": r["french"],
-            "english": r["english"],
-            "note": r["note"] or "",
-            "created_at": r["created_at"],
-            "next_review": r["next_review"],
-        }
-        for r in rows
-    ]
+    return [_row_to_expression(r) for r in rows]
+
+
+def _row_to_expression(r: sqlite3.Row) -> dict:
+    keys = r.keys()
+    return {
+        "id": r["id"],
+        "french": r["french"],
+        "english": r["english"],
+        "note": r["note"] or "",
+        "struck": bool(r["struck"]) if "struck" in keys else False,
+        "created_at": r["created_at"] if "created_at" in keys else None,
+        "next_review": r["next_review"] if "next_review" in keys else None,
+    }
+
+
+def get_expression(expr_id: int) -> dict | None:
+    conn = get_db()
+    r = conn.execute(
+        "SELECT e.*, r.next_review FROM expressions e "
+        "LEFT JOIN expression_reviews r ON e.id = r.expr_id WHERE e.id = ?",
+        (expr_id,),
+    ).fetchone()
+    conn.close()
+    return _row_to_expression(r) if r else None
 
 
 def delete_expression(expr_id: int):

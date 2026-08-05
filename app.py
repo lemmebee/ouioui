@@ -176,6 +176,26 @@ def translate_example(
     })
 
 
+@app.post("/api/words/{word_id}/strike", response_class=HTMLResponse)
+def strike_word(request: Request, word_id: int):
+    db.toggle_struck("words", word_id)
+    word = db.get_word(word_id)
+    if not word:
+        return HTMLResponse("")
+    return templates.TemplateResponse(request, "partials/word_card.html",
+                                      {"request": request, "w": word})
+
+
+@app.post("/api/expressions/{expr_id}/strike", response_class=HTMLResponse)
+def strike_expression(request: Request, expr_id: int):
+    db.toggle_struck("expressions", expr_id)
+    expr = db.get_expression(expr_id)
+    if not expr:
+        return HTMLResponse("")
+    return templates.TemplateResponse(request, "partials/expression_card.html",
+                                      {"request": request, "e": expr})
+
+
 @app.delete("/api/words/{word_id}", response_class=HTMLResponse)
 def delete_word(word_id: int):
     db.delete_word(word_id)

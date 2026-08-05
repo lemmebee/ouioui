@@ -176,6 +176,53 @@ def translate_example(
     })
 
 
+def _strike_actions(request: Request, kind: str) -> str:
+    """The "tout démarquer" control, rendered for an out-of-band swap so its
+    count follows a single-card toggle without re-rendering the list."""
+    return templates.get_template("partials/strike_actions.html").render(
+        request=request, kind=kind, struck_count=db.struck_count(kind), oob=True
+    )
+
+
+@app.post("/api/words/{word_id}/strike", response_class=HTMLResponse)
+def strike_word(request: Request, word_id: int):
+    db.toggle_struck("words", word_id)
+    word = db.get_word(word_id)
+    if not word:
+        return HTMLResponse("")
+    card = templates.get_template("partials/word_card.html").render(request=request, w=word)
+    return HTMLResponse(card + _strike_actions(request, "words"))
+
+
+@app.post("/api/expressions/{expr_id}/strike", response_class=HTMLResponse)
+def strike_expression(request: Request, expr_id: int):
+    db.toggle_struck("expressions", expr_id)
+    expr = db.get_expression(expr_id)
+    if not expr:
+        return HTMLResponse("")
+    card = templates.get_template("partials/expression_card.html").render(request=request, e=expr)
+    return HTMLResponse(card + _strike_actions(request, "expressions"))
+
+
+@app.post("/api/words/unstrike-all", response_class=HTMLResponse)
+def unstrike_all_words(request: Request):
+    db.unstrike_all("words")
+    cards = "".join(
+        templates.get_template("partials/word_card.html").render(request=request, w=w)
+        for w in db.get_all_words()
+    )
+    return HTMLResponse(cards + _strike_actions(request, "words"))
+
+
+@app.post("/api/expressions/unstrike-all", response_class=HTMLResponse)
+def unstrike_all_expressions(request: Request):
+    db.unstrike_all("expressions")
+    cards = templates.get_template("partials/expression_list.html").render(
+        request=request, expressions=db.get_all_expressions()
+    )
+    return HTMLResponse(cards + _strike_actions(request, "expressions"))
+
+
 @app.delete("/api/words/{word_id}", response_class=HTMLResponse)
 def delete_word(word_id: int):
     db.delete_word(word_id)

@@ -162,6 +162,21 @@
         .htmx-request .htmx-indicator { display: inline-block; }
         .htmx-request.htmx-indicator { display: inline-block; }
         .fade-out { opacity: 0; transition: opacity 300ms ease; }
+
+        /* The minus stays hidden until the card is hovered, and stays put once
+           struck so the state can be undone without hunting for the control. */
+        .strike-toggle { opacity: 0; transition: opacity .15s ease, color .15s ease; }
+        .group:hover .strike-toggle,
+        .strike-toggle:focus-visible,
+        .is-struck .strike-toggle { opacity: 1; }
+        .is-struck .strike-toggle { color: #4f46e5; }
+
+        .is-struck .card-title {
+            text-decoration: line-through;
+            text-decoration-thickness: 1px;
+        }
+        .is-struck > div > .flex-1,
+        .is-struck .card-meta { opacity: .5; }
     </style>
 </head>
 <body class="bg-stone-50 text-stone-800 min-h-screen">

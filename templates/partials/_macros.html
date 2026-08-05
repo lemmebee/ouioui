@@ -1,6 +1,20 @@
 {# Shared rendering for a Wiktionary sense: French gloss with its aligned
    English and Arabic, plus cited examples. Used by search, vocab and quiz. #}
 
+{# Minus button: invisible until the card is hovered, and kept visible once the
+   card is struck so the state stays discoverable. Swaps the card in place. #}
+{% macro strike_toggle(kind, item_id, struck) %}
+<button hx-post="/api/{{ kind }}/{{ item_id }}/strike"
+        hx-target="closest .{{ 'word-card' if kind == 'words' else 'expr-card' }}"
+        hx-swap="outerHTML"
+        aria-pressed="{{ 'true' if struck else 'false' }}"
+        aria-label="{{ 'Annuler le barré' if struck else 'Barrer' }}"
+        title="{{ 'Annuler le barré' if struck else 'Barrer' }}"
+        class="strike-toggle text-stone-300 hover:text-indigo-600 transition-colors text-lg leading-none px-1">
+    &minus;
+</button>
+{% endmacro %}
+
 {# Listen at the saved speed, or once at quarter speed for a hard word. #}
 {% macro speaker(text, size="text-sm") %}
 <span class="inline-flex items-center gap-0.5 align-middle">

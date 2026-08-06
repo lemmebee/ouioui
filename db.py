@@ -65,6 +65,12 @@ def init_db():
                 conn.execute(f"ALTER TABLE words ADD COLUMN {name} {decl}")
         conn.commit()
 
+    for table, col in (("reviews", "word_id"), ("expression_reviews", "expr_id")):
+        rcols = [r[1] for r in conn.execute(f"PRAGMA table_info({table})").fetchall()]
+        if rcols and "last_quizzed" not in rcols:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN last_quizzed TEXT")
+            conn.commit()
+
     ecols = [r[1] for r in conn.execute("PRAGMA table_info(expressions)").fetchall()]
     if ecols and "struck" not in ecols:
         conn.execute("ALTER TABLE expressions ADD COLUMN struck INTEGER DEFAULT 0")
@@ -91,7 +97,8 @@ def init_db():
             easiness    REAL DEFAULT 2.5,
             interval    INTEGER DEFAULT 0,
             next_review TEXT DEFAULT (date('now')),
-            updated_at  TEXT DEFAULT (datetime('now'))
+            updated_at  TEXT DEFAULT (datetime('now')),
+            last_quizzed TEXT
         );
         CREATE TABLE IF NOT EXISTS expressions (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -108,7 +115,8 @@ def init_db():
             easiness    REAL DEFAULT 2.5,
             interval    INTEGER DEFAULT 0,
             next_review TEXT DEFAULT (date('now')),
-            updated_at  TEXT DEFAULT (datetime('now'))
+            updated_at  TEXT DEFAULT (datetime('now')),
+            last_quizzed TEXT
         );
     """)
     conn.close()
@@ -368,6 +376,18 @@ def toggle_struck(table: str, row_id: int) -> bool:
     return bool(r and r["struck"])
 
 
+def reset_marked_pass() -> int:
+    """Forget that today's marked cards were seen, so the deck can be run again."""
+    conn = get_db()
+    a = conn.execute("UPDATE reviews SET last_quizzed = NULL WHERE word_id IN "
+                     "(SELECT id FROM words WHERE COALESCE(struck, 0) = 1)").rowcount
+    b = conn.execute("UPDATE expression_reviews SET last_quizzed = NULL WHERE expr_id IN "
+                     "(SELECT id FROM expressions WHERE COALESCE(struck, 0) = 1)").rowcount
+    conn.commit()
+    conn.close()
+    return a + b
+
+
 def unstrike_all(table: str) -> int:
     """Clear every strike in a table. Returns how many were cleared."""
     if table not in ("words", "expressions"):
@@ -411,7 +431,7 @@ def delete_word(word_id: int):
 # card pushes its next_review out, which sends it to the back of the deck.
 def get_due_card(marked: bool = False) -> dict | None:
     conn = get_db()
-    where = ("WHERE COALESCE(w.struck, 0) = 1" if marked
+    where = ("WHERE COALESCE(w.struck, 0) = 1 AND (r.last_quizzed IS NULL OR date(r.last_quizzed) < date('now'))" if marked
              else "WHERE r.next_review <= date('now')")
     r = conn.execute(f"""
         SELECT w.*, r.repetitions, r.easiness, r.interval, r.next_review
@@ -427,7 +447,7 @@ def due_count(marked: bool = False) -> int:
     conn = get_db()
     r = conn.execute(
         "SELECT COUNT(*) as c FROM words w JOIN reviews r ON w.id = r.word_id "
-        "WHERE COALESCE(w.struck, 0) = 1" if marked else
+        "WHERE COALESCE(w.struck, 0) = 1 AND (r.last_quizzed IS NULL OR date(r.last_quizzed) < date('now'))" if marked else
         "SELECT COUNT(*) as c FROM reviews WHERE next_review <= date('now')"
     ).fetchone()
     conn.close()
@@ -437,7 +457,8 @@ def due_count(marked: bool = False) -> int:
 def update_review(word_id: int, repetitions: int, easiness: float, interval: int, next_review: str):
     conn = get_db()
     conn.execute(
-        "UPDATE reviews SET repetitions=?, easiness=?, interval=?, next_review=?, updated_at=datetime('now') WHERE word_id=?",
+        "UPDATE reviews SET repetitions=?, easiness=?, interval=?, next_review=?, "
+        "updated_at=datetime('now'), last_quizzed=datetime('now') WHERE word_id=?",
         (repetitions, easiness, interval, next_review, word_id),
     )
     conn.commit()
@@ -520,7 +541,7 @@ def expression_count(struck: bool | None = None) -> int:
 
 def get_due_expression(marked: bool = False) -> dict | None:
     conn = get_db()
-    where = ("WHERE COALESCE(e.struck, 0) = 1" if marked
+    where = ("WHERE COALESCE(e.struck, 0) = 1 AND (r.last_quizzed IS NULL OR date(r.last_quizzed) < date('now'))" if marked
              else "WHERE r.next_review <= date('now')")
     r = conn.execute(f"""
         SELECT e.id, e.french, e.english, e.note,
@@ -549,7 +570,7 @@ def due_expression_count(marked: bool = False) -> int:
     conn = get_db()
     r = conn.execute(
         "SELECT COUNT(*) as c FROM expressions e JOIN expression_reviews r ON e.id = r.expr_id "
-        "WHERE COALESCE(e.struck, 0) = 1" if marked else
+        "WHERE COALESCE(e.struck, 0) = 1 AND (r.last_quizzed IS NULL OR date(r.last_quizzed) < date('now'))" if marked else
         "SELECT COUNT(*) as c FROM expression_reviews WHERE next_review <= date('now')"
     ).fetchone()
     conn.close()
@@ -559,7 +580,8 @@ def due_expression_count(marked: bool = False) -> int:
 def update_expression_review(expr_id: int, repetitions: int, easiness: float, interval: int, next_review: str):
     conn = get_db()
     conn.execute(
-        "UPDATE expression_reviews SET repetitions=?, easiness=?, interval=?, next_review=?, updated_at=datetime('now') WHERE expr_id=?",
+        "UPDATE expression_reviews SET repetitions=?, easiness=?, interval=?, next_review=?, "
+        "updated_at=datetime('now'), last_quizzed=datetime('now') WHERE expr_id=?",
         (repetitions, easiness, interval, next_review, expr_id),
     )
     conn.commit()

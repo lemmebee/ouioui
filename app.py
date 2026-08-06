@@ -285,6 +285,18 @@ def _has_any_items(marked: bool = False) -> bool:
     return db.word_count() > 0 or db.expression_count() > 0
 
 
+@app.post("/api/quiz/reset-marked", response_class=HTMLResponse)
+def reset_marked(request: Request):
+    """Run the marked deck again without waiting for tomorrow."""
+    db.reset_marked_pass()
+    return templates.TemplateResponse(request, "partials/quiz_card.html", {
+        "request": request,
+        "mode": "marked",
+        "card": _next_due_card(True),
+        "remaining": _total_due(True),
+    })
+
+
 @app.get("/api/quiz/next", response_class=HTMLResponse)
 def quiz_next(request: Request, mode: str = ""):
     marked = mode == "marked"

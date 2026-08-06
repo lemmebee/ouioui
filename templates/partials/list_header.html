@@ -1,0 +1,23 @@
+{# Heading plus counts for a list page. Swapped out of band after a strike, so
+   both the total and the marked tally stay right when a card leaves the list. #}
+<div id="list-header-{{ kind }}" class="flex items-center justify-between gap-4 mb-6"{% if oob %} hx-swap-oob="true"{% endif %}>
+    <h1 class="text-2xl font-bold">
+        {{ title }} <span class="text-stone-400 font-normal text-lg">({{ total }})</span>
+    </h1>
+    {% if on_marked_page %}
+        {% if total %}
+        <button hx-post="/api/{{ kind }}/unstrike-all"
+                hx-target="#{{ 'vocab-list' if kind == 'words' else 'expression-list' }}"
+                hx-swap="innerHTML"
+                class="shrink-0 px-2 py-1 text-xs font-medium text-stone-500 border border-stone-200
+                       rounded-lg hover:border-indigo-300 hover:text-indigo-600 transition-colors">
+            Tout démarquer ({{ total }})
+        </button>
+        {% endif %}
+    {% elif marked_count %}
+    <a href="/marked" class="shrink-0 px-2 py-1 text-xs font-medium text-stone-500 border border-stone-200
+              rounded-lg hover:border-indigo-300 hover:text-indigo-600 transition-colors">
+        {{ marked_count }} marqué{{ 's' if marked_count != 1 else '' }} &rarr;
+    </a>
+    {% endif %}
+</div>

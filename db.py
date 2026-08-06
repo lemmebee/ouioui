@@ -283,10 +283,18 @@ def save_word(record: dict) -> int | None:
         conn.close()
 
 
-def get_all_words() -> list[dict]:
+def _struck_clause(struck: bool | None, col: str = "struck") -> str:
+    """SQL fragment restricting to marked or unmarked rows. None means both."""
+    if struck is None:
+        return ""
+    return f" AND COALESCE({col}, 0) = {1 if struck else 0}"
+
+
+def get_all_words(struck: bool | None = None) -> list[dict]:
     conn = get_db()
     rows = conn.execute(
-        "SELECT w.*, r.next_review FROM words w LEFT JOIN reviews r ON w.id = r.word_id ORDER BY w.created_at DESC"
+        "SELECT w.*, r.next_review FROM words w LEFT JOIN reviews r ON w.id = r.word_id"
+        " WHERE 1=1" + _struck_clause(struck, "w.struck") + " ORDER BY w.created_at DESC"
     ).fetchall()
     conn.close()
     return [_row_to_word(r) for r in rows]
@@ -398,21 +406,28 @@ def delete_word(word_id: int):
     conn.close()
 
 
-def get_due_card() -> dict | None:
+# Marked mode is a practice deck, not a schedule: it walks every marked card
+# regardless of whether it is due, ordered by the one seen longest ago. Rating a
+# card pushes its next_review out, which sends it to the back of the deck.
+def get_due_card(marked: bool = False) -> dict | None:
     conn = get_db()
-    r = conn.execute("""
+    where = ("WHERE COALESCE(w.struck, 0) = 1" if marked
+             else "WHERE r.next_review <= date('now')")
+    r = conn.execute(f"""
         SELECT w.*, r.repetitions, r.easiness, r.interval, r.next_review
         FROM words w JOIN reviews r ON w.id = r.word_id
-        WHERE r.next_review <= date('now')
-        ORDER BY r.next_review ASC LIMIT 1
+        {where}
+        ORDER BY r.next_review ASC, w.id ASC LIMIT 1
     """).fetchone()
     conn.close()
     return _row_to_word(r) if r else None
 
 
-def due_count() -> int:
+def due_count(marked: bool = False) -> int:
     conn = get_db()
     r = conn.execute(
+        "SELECT COUNT(*) as c FROM words w JOIN reviews r ON w.id = r.word_id "
+        "WHERE COALESCE(w.struck, 0) = 1" if marked else
         "SELECT COUNT(*) as c FROM reviews WHERE next_review <= date('now')"
     ).fetchone()
     conn.close()
@@ -429,9 +444,9 @@ def update_review(word_id: int, repetitions: int, easiness: float, interval: int
     conn.close()
 
 
-def word_count() -> int:
+def word_count(struck: bool | None = None) -> int:
     conn = get_db()
-    r = conn.execute("SELECT COUNT(*) as c FROM words").fetchone()
+    r = conn.execute("SELECT COUNT(*) as c FROM words WHERE 1=1" + _struck_clause(struck)).fetchone()
     conn.close()
     return r["c"]
 
@@ -455,10 +470,11 @@ def save_expression(french: str, english: str, note: str = "") -> int | None:
         conn.close()
 
 
-def get_all_expressions() -> list[dict]:
+def get_all_expressions(struck: bool | None = None) -> list[dict]:
     conn = get_db()
     rows = conn.execute(
-        "SELECT e.*, r.next_review FROM expressions e LEFT JOIN expression_reviews r ON e.id = r.expr_id ORDER BY e.created_at DESC"
+        "SELECT e.*, r.next_review FROM expressions e LEFT JOIN expression_reviews r ON e.id = r.expr_id"
+        " WHERE 1=1" + _struck_clause(struck, "e.struck") + " ORDER BY e.created_at DESC"
     ).fetchall()
     conn.close()
     return [_row_to_expression(r) for r in rows]
@@ -495,21 +511,23 @@ def delete_expression(expr_id: int):
     conn.close()
 
 
-def expression_count() -> int:
+def expression_count(struck: bool | None = None) -> int:
     conn = get_db()
-    r = conn.execute("SELECT COUNT(*) as c FROM expressions").fetchone()
+    r = conn.execute("SELECT COUNT(*) as c FROM expressions WHERE 1=1" + _struck_clause(struck)).fetchone()
     conn.close()
     return r["c"]
 
 
-def get_due_expression() -> dict | None:
+def get_due_expression(marked: bool = False) -> dict | None:
     conn = get_db()
-    r = conn.execute("""
+    where = ("WHERE COALESCE(e.struck, 0) = 1" if marked
+             else "WHERE r.next_review <= date('now')")
+    r = conn.execute(f"""
         SELECT e.id, e.french, e.english, e.note,
                r.repetitions, r.easiness, r.interval, r.next_review
         FROM expressions e JOIN expression_reviews r ON e.id = r.expr_id
-        WHERE r.next_review <= date('now')
-        ORDER BY r.next_review ASC LIMIT 1
+        {where}
+        ORDER BY r.next_review ASC, e.id ASC LIMIT 1
     """).fetchone()
     conn.close()
     if not r:
@@ -527,9 +545,11 @@ def get_due_expression() -> dict | None:
     }
 
 
-def due_expression_count() -> int:
+def due_expression_count(marked: bool = False) -> int:
     conn = get_db()
     r = conn.execute(
+        "SELECT COUNT(*) as c FROM expressions e JOIN expression_reviews r ON e.id = r.expr_id "
+        "WHERE COALESCE(e.struck, 0) = 1" if marked else
         "SELECT COUNT(*) as c FROM expression_reviews WHERE next_review <= date('now')"
     ).fetchone()
     conn.close()

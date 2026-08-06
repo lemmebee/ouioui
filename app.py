@@ -75,7 +75,8 @@ def search_page(request: Request):
 def vocab_page(request: Request):
     return templates.TemplateResponse(request, "vocab.html", {
         "request": request,
-        "words": db.get_all_words(),
+        "words": db.get_all_words(struck=False),
+        "marked_count": db.word_count(struck=True),
     })
 
 
@@ -83,7 +84,17 @@ def vocab_page(request: Request):
 def expressions_page(request: Request):
     return templates.TemplateResponse(request, "expressions.html", {
         "request": request,
-        "expressions": db.get_all_expressions(),
+        "expressions": db.get_all_expressions(struck=False),
+        "marked_count": db.expression_count(struck=True),
+    })
+
+
+@app.get("/marked", response_class=HTMLResponse)
+def marked_page(request: Request):
+    return templates.TemplateResponse(request, "marked.html", {
+        "request": request,
+        "words": db.get_all_words(struck=True),
+        "expressions": db.get_all_expressions(struck=True),
     })
 
 
@@ -98,8 +109,12 @@ def word_detail(request: Request, word_id: int):
 
 
 @app.get("/quiz", response_class=HTMLResponse)
-def quiz_page(request: Request):
-    return templates.TemplateResponse(request, "quiz.html", {"request": request})
+def quiz_page(request: Request, mode: str = ""):
+    return templates.TemplateResponse(request, "quiz.html", {
+        "request": request,
+        "mode": mode,
+        "marked_total": db.word_count(struck=True) + db.expression_count(struck=True),
+    })
 
 
 # --- HTMX API ---
@@ -176,51 +191,53 @@ def translate_example(
     })
 
 
-def _strike_actions(request: Request, kind: str) -> str:
-    """The "tout démarquer" control, rendered for an out-of-band swap so its
-    count follows a single-card toggle without re-rendering the list."""
-    return templates.get_template("partials/strike_actions.html").render(
-        request=request, kind=kind, struck_count=db.struck_count(kind), oob=True
+def _on_marked_page(request: Request) -> bool:
+    """htmx sends the page the request came from, which tells us whether the
+    card just left the main list or the marked one."""
+    return (request.headers.get("HX-Current-URL") or "").rstrip("/").endswith("/marked")
+
+
+def _header_oob(request: Request, kind: str) -> str:
+    """Re-rendered list heading for an out-of-band swap, so the totals follow a
+    single-card toggle without re-rendering the whole list."""
+    marked = _on_marked_page(request)
+    count = db.word_count if kind == "words" else db.expression_count
+    if marked:
+        total, title = count(struck=True), ("Mots marqués" if kind == "words" else "Expressions marquées")
+    else:
+        total, title = count(struck=False), ("Vocabulaire" if kind == "words" else "Expressions")
+    return templates.get_template("partials/list_header.html").render(
+        request=request, kind=kind, title=title, total=total,
+        marked_count=count(struck=True), on_marked_page=marked, oob=True,
     )
 
 
 @app.post("/api/words/{word_id}/strike", response_class=HTMLResponse)
 def strike_word(request: Request, word_id: int):
-    db.toggle_struck("words", word_id)
-    word = db.get_word(word_id)
-    if not word:
-        return HTMLResponse("")
-    card = templates.get_template("partials/word_card.html").render(request=request, w=word)
-    return HTMLResponse(card + _strike_actions(request, "words"))
+    struck = db.toggle_struck("words", word_id)
+    msg = "Déplacé vers les marqués" if struck else "Remis dans le vocabulaire"
+    return HTMLResponse(_header_oob(request, "words"), headers=_toast(msg, "info"))
 
 
 @app.post("/api/expressions/{expr_id}/strike", response_class=HTMLResponse)
 def strike_expression(request: Request, expr_id: int):
-    db.toggle_struck("expressions", expr_id)
-    expr = db.get_expression(expr_id)
-    if not expr:
-        return HTMLResponse("")
-    card = templates.get_template("partials/expression_card.html").render(request=request, e=expr)
-    return HTMLResponse(card + _strike_actions(request, "expressions"))
+    struck = db.toggle_struck("expressions", expr_id)
+    msg = "Déplacé vers les marqués" if struck else "Remis dans les expressions"
+    return HTMLResponse(_header_oob(request, "expressions"), headers=_toast(msg, "info"))
 
 
 @app.post("/api/words/unstrike-all", response_class=HTMLResponse)
 def unstrike_all_words(request: Request):
-    db.unstrike_all("words")
-    cards = "".join(
-        templates.get_template("partials/word_card.html").render(request=request, w=w)
-        for w in db.get_all_words()
-    )
-    return HTMLResponse(cards + _strike_actions(request, "words"))
+    n = db.unstrike_all("words")
+    return HTMLResponse(_header_oob(request, "words"),
+                        headers=_toast(f"{n} mot{'s' if n != 1 else ''} démarqué{'s' if n != 1 else ''}"))
 
 
 @app.post("/api/expressions/unstrike-all", response_class=HTMLResponse)
 def unstrike_all_expressions(request: Request):
-    db.unstrike_all("expressions")
-    cards = templates.get_template("partials/expression_list.html").render(
-        request=request, expressions=db.get_all_expressions()
-    )
-    return HTMLResponse(cards + _strike_actions(request, "expressions"))
+    n = db.unstrike_all("expressions")
+    return HTMLResponse(_header_oob(request, "expressions"),
+                        headers=_toast(f"{n} expression{'s' if n != 1 else ''} démarquée{'s' if n != 1 else ''}"))
 
 
 @app.delete("/api/words/{word_id}", response_class=HTMLResponse)
@@ -249,66 +266,72 @@ def delete_expression(expr_id: int):
     return HTMLResponse("", headers=_toast("Expression supprimée"))
 
 
-def _next_due_card() -> dict | None:
-    """Return the next due card (word or expression), whichever is older."""
-    word_card = db.get_due_card()
-    expr_card = db.get_due_expression()
+def _next_due_card(marked: bool = False) -> dict | None:
+    """Return the next card (word or expression), whichever is older."""
+    word_card = db.get_due_card(marked)
+    expr_card = db.get_due_expression(marked)
     if word_card and expr_card:
         return word_card if word_card["next_review"] <= expr_card["next_review"] else expr_card
     return word_card or expr_card
 
 
-def _total_due() -> int:
-    return db.due_count() + db.due_expression_count()
+def _total_due(marked: bool = False) -> int:
+    return db.due_count(marked) + db.due_expression_count(marked)
 
 
-def _has_any_items() -> bool:
+def _has_any_items(marked: bool = False) -> bool:
+    if marked:
+        return db.word_count(struck=True) + db.expression_count(struck=True) > 0
     return db.word_count() > 0 or db.expression_count() > 0
 
 
 @app.get("/api/quiz/next", response_class=HTMLResponse)
-def quiz_next(request: Request):
-    card = _next_due_card()
+def quiz_next(request: Request, mode: str = ""):
+    marked = mode == "marked"
+    card = _next_due_card(marked)
     if card is None:
         return templates.TemplateResponse(request, "partials/quiz_card.html", {
             "request": request,
-            "done": _has_any_items(),
-            "empty": not _has_any_items(),
+            "mode": mode,
+            "done": _has_any_items(marked),
+            "empty": not _has_any_items(marked),
         })
-    remaining = _total_due()
     return templates.TemplateResponse(request, "partials/quiz_card.html", {
         "request": request,
+        "mode": mode,
         "card": card,
-        "remaining": remaining,
+        "remaining": _total_due(marked),
     })
 
 
 @app.post("/api/quiz/rate", response_class=HTMLResponse)
-def quiz_rate(request: Request, word_id: int = Form(None), expr_id: int = Form(None), quality: int = Form(...)):
+def quiz_rate(request: Request, word_id: int = Form(None), expr_id: int = Form(None),
+              quality: int = Form(...), mode: str = Form("")):
+    marked = mode == "marked"
     if word_id:
-        card = db.get_due_card()
+        card = db.get_due_card(marked)
         if card and card["id"] == word_id:
             reps, ease, ivl = sm2(quality, card["repetitions"], card["easiness"], card["interval"])
             next_date = (date.today() + timedelta(days=ivl)).isoformat()
             db.update_review(word_id, reps, ease, ivl, next_date)
     elif expr_id:
-        card = db.get_due_expression()
+        card = db.get_due_expression(marked)
         if card and card["id"] == expr_id:
             reps, ease, ivl = sm2(quality, card["repetitions"], card["easiness"], card["interval"])
             next_date = (date.today() + timedelta(days=ivl)).isoformat()
             db.update_expression_review(expr_id, reps, ease, ivl, next_date)
 
-    # Return next card
-    next_card = _next_due_card()
+    next_card = _next_due_card(marked)
     if next_card is None:
         return templates.TemplateResponse(request, "partials/quiz_card.html", {
             "request": request,
-            "done": _has_any_items(),
-            "empty": not _has_any_items(),
+            "mode": mode,
+            "done": _has_any_items(marked),
+            "empty": not _has_any_items(marked),
         })
-    remaining = _total_due()
     return templates.TemplateResponse(request, "partials/quiz_card.html", {
         "request": request,
+        "mode": mode,
         "card": next_card,
-        "remaining": remaining,
+        "remaining": _total_due(marked),
     })

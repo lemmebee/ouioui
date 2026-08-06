@@ -6,7 +6,7 @@
 {% macro strike_toggle(kind, item_id, struck) %}
 <button hx-post="/api/{{ kind }}/{{ item_id }}/strike"
         hx-target="closest .{{ 'word-card' if kind == 'words' else 'expr-card' }}"
-        hx-swap="outerHTML"
+        hx-swap="outerHTML swap:200ms"
         aria-pressed="{{ 'true' if struck else 'false' }}"
         aria-label="{{ 'Annuler le barré' if struck else 'Barrer' }}"
         title="{{ 'Annuler le barré' if struck else 'Barrer' }}"

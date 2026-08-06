@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Marqués{% endblock %}
+{% block content %}
+
+<p class="text-sm text-stone-500 mb-6">
+    Les mots et expressions marqués sont retirés des listes principales et
+    rassemblés ici.
+    {% if words or expressions %}
+    <a href="/quiz?mode=marked" class="text-indigo-600 hover:underline">Réviser seulement les marqués &rarr;</a>
+    {% endif %}
+</p>
+
+{% if not words and not expressions %}
+<div class="text-center py-12 text-stone-400">
+    <p class="text-lg mb-2">Rien de marqué</p>
+    <p class="text-sm">Passe la souris sur une carte et clique sur le moins pour la marquer</p>
+</div>
+{% endif %}
+
+{% if words %}
+{% with kind="words", title="Mots marqués", total=words|length, marked_count=0, on_marked_page=True, oob=False %}
+  {% include "partials/list_header.html" %}
+{% endwith %}
+<div class="space-y-3 mb-10" id="vocab-list">
+    {% for w in words %}
+    {% include "partials/word_card.html" %}
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if expressions %}
+{% with kind="expressions", title="Expressions marquées", total=expressions|length, marked_count=0, on_marked_page=True, oob=False %}
+  {% include "partials/list_header.html" %}
+{% endwith %}
+<div class="space-y-3" id="expression-list">
+    {% for e in expressions %}
+    {% include "partials/expression_card.html" %}
+    {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

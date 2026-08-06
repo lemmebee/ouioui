@@ -1,14 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Vocabulaire{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between gap-4 mb-6">
-    <h1 class="text-2xl font-bold">
-        Vocabulaire <span class="text-stone-400 font-normal text-lg">({{ words|length }})</span>
-    </h1>
-    {% with kind="words", struck_count=words|selectattr("struck")|list|length, oob=False %}
-      {% include "partials/strike_actions.html" %}
-    {% endwith %}
-</div>
+{% with kind="words", title="Vocabulaire", total=words|length, marked_count=marked_count, on_marked_page=False, oob=False %}
+  {% include "partials/list_header.html" %}
+{% endwith %}
 
 {% if not words %}
 <div class="text-center py-12 text-stone-400">

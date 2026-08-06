@@ -1,14 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Expressions{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between gap-4 mb-6">
-    <h1 class="text-2xl font-bold">
-        Expressions <span class="text-stone-400 font-normal text-lg">({{ expressions|length }})</span>
-    </h1>
-    {% with kind="expressions", struck_count=expressions|selectattr("struck")|list|length, oob=False %}
-      {% include "partials/strike_actions.html" %}
-    {% endwith %}
-</div>
+{% with kind="expressions", title="Expressions", total=expressions|length, marked_count=marked_count, on_marked_page=False, oob=False %}
+  {% include "partials/list_header.html" %}
+{% endwith %}
 
 <form hx-post="/api/expressions" hx-target="#expression-list" hx-swap="innerHTML" hx-on::after-request="if(event.detail.successful) this.reset()"
       class="bg-white rounded-xl border border-stone-200 p-4 mb-6 space-y-3">

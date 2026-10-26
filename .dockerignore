@@ -1,0 +1,8 @@
+.env
+.venv/
+.git/
+__pycache__/
+backups/
+ouioui.db
+.claude/
+test_magic.py

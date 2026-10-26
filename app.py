@@ -13,6 +13,7 @@ from fastapi.templating import Jinja2Templates
 
 import db
 import dictionary
+import magic
 from sm2 import sm2
 
 app = FastAPI()
@@ -21,6 +22,7 @@ templates = Jinja2Templates(directory="templates")
 # Passed as a callable, not a value: a key can run out of quota mid-process, and
 # the Traduire buttons must disappear when there is nothing behind them.
 templates.env.globals["deepl_enabled"] = dictionary.deepl_available
+magic.install(app, templates)
 
 # Word of the day cache: {date_str: word_dict}
 _wotd_cache: dict[str, dict | None] = {}

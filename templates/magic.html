@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OuiOui — Le mot magique</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥖</text></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-stone-50 text-stone-800 min-h-screen flex items-center justify-center px-6">
+    <form method="post" action="/magic" class="w-full max-w-sm bg-white border border-stone-200 rounded-xl p-8 shadow-sm">
+        <div class="text-4xl mb-4">&#129366;</div>
+        <h1 class="text-xl font-bold mb-1">Dis le mot magique</h1>
+        <p class="text-sm text-stone-400 mb-6">Say the magic word.</p>
+        <input type="hidden" name="next" value="{{ next }}">
+        <input type="password" name="word" autofocus required autocomplete="current-password"
+               class="w-full border border-stone-300 rounded-lg px-3 py-2 mb-3 focus:outline-none focus:border-indigo-400">
+        {% if error %}
+        <p class="text-sm text-rose-600 mb-3">{{ error }}</p>
+        {% endif %}
+        <button type="submit"
+                class="w-full bg-indigo-600 text-white rounded-lg py-2 font-medium hover:bg-indigo-700 transition-colors">
+            Entrer
+        </button>
+    </form>
+</body>
+</html>

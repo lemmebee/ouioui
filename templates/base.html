@@ -31,8 +31,13 @@
             if (!VOICES.length) loadVoices();
             // Prefer a local voice: remote ones commonly ignore the rate setting,
             // which is why picking a speed appeared to do nothing.
-            return VOICES.find(function (v) { return v.lang.indexOf('fr') === 0 && v.localService; })
-                || VOICES.find(function (v) { return v.lang.indexOf('fr') === 0; })
+            // France French first: Safari lists fr-CA (Amelie) before fr-FR.
+            // Android reports fr_FR, hence the normalisation.
+            const lang = function (v) { return v.lang.replace('_', '-'); };
+            return VOICES.find(function (v) { return lang(v) === 'fr-FR' && v.localService; })
+                || VOICES.find(function (v) { return lang(v) === 'fr-FR'; })
+                || VOICES.find(function (v) { return lang(v).indexOf('fr') === 0 && v.localService; })
+                || VOICES.find(function (v) { return lang(v).indexOf('fr') === 0; })
                 || null;
         }
 
